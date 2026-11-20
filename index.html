@@ -613,7 +613,7 @@ function pickVoices(){
  vs.sort((a,b)=>sc(b)-sc(a));
  VO.f=vs.find(v=>FEM.test(v.name)&&!/\bmale\b/i.test(v.name))||null;
  /* giọng nam: ưu tiên các giọng trầm ấm (Guy, Andrew, Christopher, Brian, Davis...), sau đó mới đến David, Mark */
- const WARM=["guy","andrew","christopher","brian","davis","roger","eric","steffan","ryan","thomas","daniel","david","mark","alex","fred"];
+ const WARM=["andrew","brian","guy","christopher","davis","roger","eric","steffan","ryan","thomas","daniel","david","mark","alex","fred"];
  const males=vs.filter(v=>MAL.test(v.name)&&!/female/i.test(v.name));
  const rank=v=>{const n=v.name.toLowerCase();const i=WARM.findIndex(w=>n.includes(w));return(i<0?WARM.length:i)-(/natural|online|neural/i.test(v.name)?100:0)};
  males.sort((a,b)=>rank(a)-rank(b));
@@ -629,15 +629,27 @@ function voiceInfo(){
  const n=(v,fake)=>v?esc(v.name.replace(/^Microsoft |^Google /,"").replace(/ - English.*$/,""))+(fake?" (giả lập)":""):"giọng mặc định";
  return"Giọng đọc: 👨 "+n(VO.m,VO.mFake)+" · 👩 "+n(VO.f,VO.fFake);
 }
-let playingBtn=null;
+let playingBtn=null,speakRun=0,speakTimer=null;
+/* Giọng nam đọc theo từng cụm, nghỉ ngắn sau dấu phẩy và giữa các câu, nghe như vừa nghĩ vừa nói */
+function speakChunks(t){return t.split(/(?<=[,;:—])\s+|(?<=[.!?])\s+/).map(s=>s.trim()).filter(Boolean)}
 function speak(t,g,btn){if(!canSpeak)return;g=g==="m"?"m":"f";try{
- speechSynthesis.cancel();if(playingBtn)playingBtn.classList.remove("playing");
- const u=new SpeechSynthesisUtterance(t);u.lang="en-US";u.rate=g==="m"?(S.slow?.66:.85):(S.slow?.72:.95);
- const v=g==="m"?VO.m:VO.f;if(v){u.voice=v;u.lang=v.lang}
- /* nam: hạ cao độ, đọc chậm hơn một chút cho trầm và ấm */
- u.pitch=g==="m"?(VO.mFake?.45:.6):(VO.fFake?1.35:1);
- if(btn){playingBtn=btn;btn.classList.add("playing");u.onend=u.onerror=()=>btn.classList.remove("playing")}
- speechSynthesis.speak(u)}catch(e){}}
+ speechSynthesis.cancel();clearTimeout(speakTimer);if(playingBtn)playingBtn.classList.remove("playing");
+ const run=++speakRun,v=g==="m"?VO.m:VO.f;
+ const parts=g==="m"?speakChunks(t):[t];
+ const done=()=>{if(btn)btn.classList.remove("playing")};
+ if(btn){playingBtn=btn;btn.classList.add("playing")}
+ const play=i=>{
+  if(run!==speakRun)return;
+  if(i>=parts.length){done();return}
+  const u=new SpeechSynthesisUtterance(parts[i]);u.lang="en-US";u.rate=g==="m"?(S.slow?.66:.85):(S.slow?.72:.95);
+  if(v){u.voice=v;u.lang=v.lang}
+  /* nam: hạ cao độ, đọc chậm hơn một chút cho trầm và ấm */
+  u.pitch=g==="m"?(VO.mFake?.45:.6):(VO.fFake?1.35:1);
+  u.onend=()=>{if(run!==speakRun)return;const gap=/[.!?]$/.test(parts[i])?450:/[,;:—]$/.test(parts[i])?250:0;speakTimer=setTimeout(()=>play(i+1),gap)};
+  u.onerror=()=>{if(run===speakRun)done()};
+  speechSynthesis.speak(u);
+ };
+ play(0)}catch(e){}}
 function spkBtn(t){if(!canSpeak)return"";const a=esc(t);return'<span class="vp"><button class="vbtn" data-act="speak" data-g="m" data-t="'+a+'" title="Nghe giọng nam" aria-label="Nghe giọng nam: '+a+'">'+I.spk+'<span class="vg" aria-hidden="true">👨</span></button><button class="vbtn" data-act="speak" data-g="f" data-t="'+a+'" title="Nghe giọng nữ" aria-label="Nghe giọng nữ: '+a+'">'+I.spk+'<span class="vg" aria-hidden="true">👩</span></button></span>'}
 function cpyBtn(t){return '<button class="ico" data-act="copy" data-t="'+esc(t)+'" title="Sao chép" aria-label="Sao chép câu">'+I.copy+"</button>"}
 let tt;function toast(m){const t=$("#toast");t.textContent=m;t.hidden=false;clearTimeout(tt);tt=setTimeout(()=>{t.hidden=true},3600)}

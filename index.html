@@ -1,5 +1,5 @@
 <!doctype html><html lang="vi"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover"><style>:root{color-scheme:light;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}body{margin:0;font:14px system-ui,sans-serif}img{max-width:100%}[hidden]{display:none!important}</style></head><body>
-<title>Tiếng Anh Nghề</title>
+<title>Tự học Tiếng Anh</title>
 <meta name="claude:viewport-fit-sides" content="cover">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -301,7 +301,7 @@ kbd{font:600 .72rem var(--f-body);border:1px solid var(--line);border-bottom-wid
     <div class="brand">
       <div class="logo" aria-hidden="true">EN</div>
       <div>
-        <h1>Tiếng Anh Nghề</h1>
+        <h1>Tự học Tiếng Anh</h1>
         <p class="sub">Lộ trình 12 tuần · từ và mẫu câu có hình minh họa · phát âm giọng nam, nữ · dịch Anh ↔ Việt</p>
       </div>
     </div>
@@ -579,7 +579,7 @@ const APPS=[
 /* ========== TRẠNG THÁI ========== */
 const NG=["gt","kt","ks","it"];
 const TABS=[["lo-trinh","Lộ trình"],["tu-vung","Từ vựng"],["mau-cau","Mẫu câu"],["the-nho","Thẻ nhớ"],["kiem-tra","Kiểm tra"],["thanh-ngu","Thành ngữ"],["dich","Dịch"],["hoi-thoai","Hội thoại"]];
-const KEY="tieng-anh-nghe-v1";
+const KEY="tieng-anh-nghe-v1"; /* giữ khóa cũ để không mất tiến độ đã lưu */
 let saved={};
 try{saved=JSON.parse(localStorage.getItem(KEY))||{}}catch(e){}
 const S={tab:"lo-trinh",nganh:DATA[saved.nganh]?saved.nganh:"kt",planNg:DATA[saved.planNg]?saved.planNg:"kt",topic:-1,q:"",

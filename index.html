@@ -604,8 +604,8 @@ const I={
 };
 const canSpeak=("speechSynthesis" in window)&&typeof SpeechSynthesisUtterance!=="undefined";
 /* Hai giọng đọc: chọn giọng nam / nữ có sẵn trên máy theo tên giọng; thiếu thì giả lập bằng cao độ */
-const FEM=/zira|aria|jenny|michelle|emma|\bava\b|\bana\b|samantha|victoria|karen|moira|tessa|fiona|susan|hazel|libby|sonia|maisie|joanna|salli|kimberly|\bivy\b|kendra|allison|serena|catherine|natasha|clara|\bsara\b|amber|ashley|cora|elizabeth|monica|nancy|female|google us english/i;
-const MAL=/david|\bmark\b|\bguy\b|\beric\b|christopher|roger|steffan|brian|andrew|ryan|thomas|george|\balex\b|daniel|\bfred\b|\btom\b|aaron|arthur|oliver|matthew|joey|justin|\bliam\b|william|james|davis|jacob|\btony\b|jason|\bmale\b/i;
+const FEM=/zira|aria|jenny|michelle|emma|\bava\b|\bana\b|samantha|victoria|karen|moira|tessa|fiona|susan|hazel|libby|sonia|maisie|joanna|salli|kimberly|\bivy\b|kendra|allison|serena|catherine|natasha|clara|\bsara\b|amber|ashley|cora|elizabeth|monica|nancy|nicky|martha|\bkate\b|\bzoe\b|\bflo\b|sandy|shelley|female|google us english/i;
+const MAL=/david|\bmark\b|\bguy\b|\beric\b|christopher|roger|steffan|brian|andrew|ryan|thomas|george|\balex\b|daniel|\bfred\b|\btom\b|aaron|arthur|oliver|matthew|joey|justin|\bliam\b|william|james|davis|jacob|\btony\b|jason|gordon|rishi|\bevan\b|nathan|\breed\b|\beddy\b|rocko|\blee\b|\bmale\b/i;
 const VO={m:null,f:null,mFake:false,fFake:false};
 function pickVoices(){
  if(!canSpeak)return;let vs=[];try{vs=speechSynthesis.getVoices().filter(v=>/^en/i.test(v.lang))}catch(e){}
@@ -613,7 +613,8 @@ function pickVoices(){
  vs.sort((a,b)=>sc(b)-sc(a));
  VO.f=vs.find(v=>FEM.test(v.name)&&!/\bmale\b/i.test(v.name))||null;
  /* giọng nam: ưu tiên các giọng trầm ấm (Guy, Andrew, Christopher, Brian, Davis...), sau đó mới đến David, Mark */
- const WARM=["andrew","brian","guy","christopher","davis","roger","eric","steffan","ryan","thomas","daniel","david","mark","alex","fred"];
+ /* có cả tên giọng của iPhone/Mac: Aaron, Evan, Nathan, Daniel, Gordon, Fred */
+ const WARM=["andrew","brian","guy","christopher","aaron","evan","nathan","davis","roger","eric","steffan","ryan","thomas","daniel","gordon","david","mark","alex","fred"];
  const males=vs.filter(v=>MAL.test(v.name)&&!/female/i.test(v.name));
  const rank=v=>{const n=v.name.toLowerCase();const i=WARM.findIndex(w=>n.includes(w));return(i<0?WARM.length:i)-(/natural|online|neural/i.test(v.name)?100:0)};
  males.sort((a,b)=>rank(a)-rank(b));

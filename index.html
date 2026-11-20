@@ -281,6 +281,17 @@ kbd{font:600 .72rem var(--f-body);border:1px solid var(--line);border-bottom-wid
 .toast{position:fixed;left:50%;transform:translateX(-50%);bottom:calc(18px + env(safe-area-inset-bottom,0px));z-index:20;background:var(--ink);color:var(--bg);padding:10px 16px;border-radius:12px;font-size:.875rem;max-width:min(560px,calc(100vw - 32px));box-shadow:0 8px 24px rgba(0,0,0,.25)}
 .overlay{position:fixed;inset:0;z-index:30;background:rgba(8,12,18,.5);display:grid;place-items:center;padding:16px}
 .panel{background:var(--surface);border-radius:16px;padding:18px;width:min(560px,100%);display:flex;flex-direction:column;gap:10px}
+.prof-chip{margin-top:8px;display:inline-flex;gap:8px;align-items:center;border:1px solid var(--line);background:var(--surface);color:var(--ink);border-radius:999px;padding:4px 12px 4px 4px;font:600 .82rem var(--f-body);cursor:pointer;max-width:100%}
+.prof-chip:hover{border-color:var(--accent-line)}
+.av{width:26px;height:26px;flex:none;border-radius:50%;background:var(--accent);color:var(--on-accent);display:grid;place-items:center;font:700 .78rem var(--f-display)}
+.prof-list{display:flex;flex-direction:column;gap:6px;max-height:40vh;overflow:auto}
+.prof-item{display:flex;gap:10px;align-items:center;border:1px solid var(--line);border-radius:12px;padding:8px 10px;background:var(--surface);cursor:pointer;font:inherit;color:var(--ink);text-align:left}
+.prof-item .av{width:34px;height:34px;font-size:.95rem}
+.prof-item.cur{border-color:var(--accent);background:var(--accent-soft)}
+.prof-form{display:grid;grid-template-columns:1fr 92px;gap:8px;margin-top:8px}
+.prof-form input{border:1px solid var(--line);border-radius:10px;padding:10px 12px;font:inherit;background:var(--bg);color:var(--ink);min-width:0}
+.prof-form input:focus{outline:none;border-color:var(--accent)}
+.prof-form .btn{grid-column:1/-1;justify-content:center}
 .panel textarea{width:100%;height:220px;font:13px/1.5 ui-monospace,Consolas,monospace;border:1px solid var(--line);border-radius:10px;padding:10px;background:var(--bg);color:var(--ink)}
 
 @media (max-width:640px){
@@ -303,6 +314,7 @@ kbd{font:600 .72rem var(--f-body);border:1px solid var(--line);border-bottom-wid
       <div>
         <h1>Tự học Tiếng Anh</h1>
         <p class="sub">Lộ trình 12 tuần · từ và mẫu câu có hình minh họa · phát âm giọng nam, nữ · dịch Anh ↔ Việt</p>
+        <button class="prof-chip" id="profChip" data-act="prof-open" title="Người học: đổi, thêm, sửa"></button>
       </div>
     </div>
     <div class="seg" id="nganhSeg" aria-label="Chọn ngành"></div>
@@ -320,6 +332,9 @@ kbd{font:600 .72rem var(--f-body);border:1px solid var(--line);border-bottom-wid
   <section id="v-hoi-thoai" class="view" hidden></section>
 </main>
 <div id="toast" class="toast" role="status" hidden></div>
+<div id="profBox" class="overlay" hidden>
+  <div class="panel" role="dialog" aria-label="Người học" id="profPanel"></div>
+</div>
 <div id="copyBox" class="overlay" hidden>
   <div class="panel" role="dialog" aria-label="Sao chép thủ công">
     <b>Chép thủ công</b>
@@ -579,7 +594,16 @@ const APPS=[
 /* ========== TRẠNG THÁI ========== */
 const NG=["gt","kt","ks","it"];
 const TABS=[["lo-trinh","Lộ trình"],["tu-vung","Từ vựng"],["mau-cau","Mẫu câu"],["the-nho","Thẻ nhớ"],["kiem-tra","Kiểm tra"],["thanh-ngu","Thành ngữ"],["dich","Dịch"],["hoi-thoai","Hội thoại"]];
-const KEY="tieng-anh-nghe-v1"; /* giữ khóa cũ để không mất tiến độ đã lưu */
+/* ========== HỒ SƠ NGƯỜI HỌC (tên, tuổi) ==========
+   Lưu trong trình duyệt của máy này, không gửi đi đâu. Mỗi người có tiến độ riêng.
+   Người đầu tiên tạo hồ sơ nhận luôn tiến độ đã lưu từ trước (khóa cũ "tieng-anh-nghe-v1"). */
+const PKEY="tieng-anh-nghe-profiles";
+let PROF={list:[],cur:null};
+try{const p=JSON.parse(localStorage.getItem(PKEY));if(p&&Array.isArray(p.list))PROF=p}catch(e){}
+const CURP=PROF.list.find(p=>p.id===PROF.cur)||null;
+function profKey(p){return p.legacy?"tieng-anh-nghe-v1":"tieng-anh-nghe-v1:"+p.id}
+function profSave(){try{localStorage.setItem(PKEY,JSON.stringify(PROF))}catch(e){}}
+const KEY=CURP?profKey(CURP):"tieng-anh-nghe-v1";
 let saved={};
 try{saved=JSON.parse(localStorage.getItem(KEY))||{}}catch(e){}
 const S={tab:"lo-trinh",nganh:DATA[saved.nganh]?saved.nganh:"kt",planNg:DATA[saved.planNg]?saved.planNg:"kt",topic:-1,q:"",
@@ -707,7 +731,7 @@ function renderPlan(openIds){
  let cur=stats.findIndex(s=>s.d<s.n);if(cur<0)cur=11;
  const curWk=P[cur];
  const allW=words(ng,-1),kn=allW.filter(w=>S.known.has(w.id)).length;
- let h='<div class="plan-head"><div><p class="eyebrow">Lộ trình 12 tuần · '+DATA[ng].ten+'</p><h2>Tuần '+(cur+1)+": "+esc(wkTitle(curWk))+'</h2><p class="muted" style="margin:4px 0 0">Tháng '+curWk.m+" · "+MONTHS[curWk.m-1].ten+". "+MONTHS[curWk.m-1].mota+'.</p>'+
+ let h='<div class="plan-head"><div><p class="eyebrow">'+(CURP?"Chào "+esc(CURP.name)+" · ":"")+"Lộ trình 12 tuần · "+DATA[ng].ten+'</p><h2>Tuần '+(cur+1)+": "+esc(wkTitle(curWk))+'</h2><p class="muted" style="margin:4px 0 0">Tháng '+curWk.m+" · "+MONTHS[curWk.m-1].ten+". "+MONTHS[curWk.m-1].mota+'.</p>'+
   '<div class="stat"><div><b>'+done+"/"+total+'</b><span>việc đã xong</span></div><div><b>'+kn+"/"+allW.length+'</b><span>từ '+DATA[ng].ngan.toLowerCase()+' đã thuộc</span></div><div><b>'+Math.round(done/total*100)+'%</b><span>lộ trình</span></div></div></div>'+
   '<div class="pic lg" aria-hidden="true">'+pic(wkIcon(curWk))+"</div>"+
   '<div class="weekbar" aria-label="Tiến độ từng tuần">'+P.map((wk,k)=>{const p=Math.round(stats[k].d/stats[k].n*100);return '<button class="wcell'+(k===cur?" cur":"")+'" data-act="toweek" data-w="'+wk.w+'" title="Tuần '+wk.w+": "+esc(wkTitle(wk))+" ("+stats[k].d+"/"+stats[k].n+')" style="background:linear-gradient(to top,var(--accent) '+p+'%,var(--sunk) '+p+'%)">'+wk.w+"</button>"}).join("")+"</div>"+
@@ -1176,7 +1200,47 @@ function setTab(t){S.tab=t;render();try{if(location.hash.slice(1)!==t)location.h
 function fromHash(){const h=location.hash.slice(1);S.tab=TABS.some(t=>t[0]===h)?h:"lo-trinh"}
 window.addEventListener("hashchange",()=>{const h=location.hash.slice(1);if(h&&h!==S.tab&&TABS.some(t=>t[0]===h)){S.tab=h;render()}});
 if(canSpeak){try{pickVoices();speechSynthesis.addEventListener("voiceschanged",pickVoices)}catch(e){}}
-fromHash();render();
+/* ========== GIAO DIỆN HỒ SƠ NGƯỜI HỌC ========== */
+let profDelArm=false;
+function initials(n){const w=String(n).trim().split(/\s+/);return(w[w.length-1]||"?").charAt(0).toUpperCase()}
+function renderProfChip(){const c=$("#profChip");if(!c)return;c.innerHTML=CURP?'<span class="av">'+esc(initials(CURP.name))+"</span>"+esc(CURP.name)+" · "+CURP.age+" tuổi":'<span class="av">?</span>Đăng nhập người học'}
+function profFormHTML(id,btn,p){return'<form class="prof-form" id="'+id+'" autocomplete="off"><input name="pname" required maxlength="40" placeholder="Tên của bạn" aria-label="Tên" value="'+esc(p?p.name:"")+'"><input name="page" type="number" required min="4" max="100" inputmode="numeric" placeholder="Tuổi" aria-label="Tuổi" value="'+(p?p.age:"")+'"><button class="btn pri" type="submit">'+btn+"</button></form>"}
+function openProf(){
+ const first=!PROF.list.length;let h;
+ if(first)h='<h2 style="font-size:1.25rem">Chào bạn! 👋</h2><p class="muted" style="margin:0">Nhập tên và tuổi để bắt đầu học. Mỗi người học có tiến độ, từ đã thuộc và mục đã lưu riêng.</p>'+profFormHTML("profNew","Bắt đầu học");
+ else h='<h2 style="font-size:1.2rem">Người học</h2><p class="muted" style="margin:0;font-size:.85rem">Bấm vào tên để chuyển người học. Mỗi người có tiến độ riêng.</p><div class="prof-list">'+
+  PROF.list.map(p=>'<button class="prof-item'+(p.id===PROF.cur?" cur":"")+'" data-act="prof-pick" data-id="'+esc(p.id)+'"><span class="av">'+esc(initials(p.name))+'</span><span style="flex:1;min-width:0"><b>'+esc(p.name)+'</b><br><span class="muted" style="font-size:.82rem">'+p.age+" tuổi"+(p.id===PROF.cur?" · đang học":"")+"</span></span></button>").join("")+"</div>"+
+  '<details><summary class="link" style="padding:6px 0">＋ Thêm người học</summary>'+profFormHTML("profNew","Thêm và chuyển sang người này")+"</details>"+
+  (CURP?'<details><summary class="link" style="padding:6px 0">Sửa tên, tuổi của '+esc(CURP.name)+"</summary>"+profFormHTML("profEdit","Lưu thay đổi",CURP)+'<button class="btn" style="color:var(--bad);margin-top:8px" data-act="prof-del">Xóa hồ sơ '+esc(CURP.name)+"</button></details>":"")+
+  '<p class="muted" style="margin:0;font-size:.78rem">Hồ sơ chỉ lưu trong trình duyệt của máy này, không gửi đi đâu. Máy khác hoặc trình duyệt khác sẽ không thấy.</p><div><button class="btn" data-act="prof-close">Đóng</button></div>';
+ $("#profPanel").innerHTML=h;$("#profBox").hidden=false;profDelArm=false;
+ if(first){const i=$("#profPanel input");if(i)i.focus()}
+}
+function profSwitch(id){PROF.cur=id;profSave();location.reload()}
+document.addEventListener("submit",e=>{
+ const f=e.target;if(f.id!=="profNew"&&f.id!=="profEdit")return;e.preventDefault();
+ const name=f.querySelector('[name="pname"]').value.trim().slice(0,40),age=parseInt(f.querySelector('[name="page"]').value,10);
+ if(!name){toast("Hãy nhập tên");return}
+ if(!(age>=4&&age<=100)){toast("Tuổi cần từ 4 đến 100");return}
+ if(f.id==="profEdit"&&CURP){CURP.name=name;CURP.age=age;profSave();$("#profBox").hidden=true;renderProfChip();if(S.tab==="lo-trinh")renderPlan();toast("Đã lưu tên, tuổi");return}
+ const p={id:Date.now().toString(36)+Math.random().toString(36).slice(2,6),name,age,created:Date.now(),legacy:!PROF.list.length};
+ PROF.list.push(p);profSwitch(p.id);
+});
+document.addEventListener("click",e=>{
+ const b=e.target.closest("[data-act]");if(!b)return;const a=b.dataset.act;
+ if(a==="prof-open")openProf();
+ else if(a==="prof-close"){if(PROF.list.length)$("#profBox").hidden=true}
+ else if(a==="prof-pick"){if(b.dataset.id===PROF.cur)$("#profBox").hidden=true;else profSwitch(b.dataset.id)}
+ else if(a==="prof-del"&&CURP){
+  if(!profDelArm){profDelArm=true;b.textContent="Bấm lần nữa để xóa hẳn hồ sơ và tiến độ của "+CURP.name;return}
+  try{localStorage.removeItem(profKey(CURP))}catch(err){}
+  PROF.list=PROF.list.filter(p=>p.id!==CURP.id);PROF.cur=PROF.list.length?PROF.list[0].id:null;profSave();location.reload();
+ }
+});
+document.addEventListener("keydown",e=>{if(e.key==="Escape"&&!$("#profBox").hidden&&PROF.list.length)$("#profBox").hidden=true});
+
+fromHash();render();renderProfChip();
+if(!PROF.list.length)openProf();
 </script>
 
 </body></html>

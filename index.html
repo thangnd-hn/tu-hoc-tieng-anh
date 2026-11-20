@@ -612,7 +612,12 @@ function pickVoices(){
  const sc=v=>(/en[-_]US/i.test(v.lang)?2:/en[-_]GB/i.test(v.lang)?1:0)+(/natural|online|neural/i.test(v.name)?3:0);
  vs.sort((a,b)=>sc(b)-sc(a));
  VO.f=vs.find(v=>FEM.test(v.name)&&!/\bmale\b/i.test(v.name))||null;
- VO.m=vs.find(v=>MAL.test(v.name)&&!/female/i.test(v.name))||null;
+ /* giọng nam: ưu tiên các giọng trầm ấm (Guy, Andrew, Christopher, Brian, Davis...), sau đó mới đến David, Mark */
+ const WARM=["guy","andrew","christopher","brian","davis","roger","eric","steffan","ryan","thomas","daniel","david","mark","alex","fred"];
+ const males=vs.filter(v=>MAL.test(v.name)&&!/female/i.test(v.name));
+ const rank=v=>{const n=v.name.toLowerCase();const i=WARM.findIndex(w=>n.includes(w));return(i<0?WARM.length:i)-(/natural|online|neural/i.test(v.name)?100:0)};
+ males.sort((a,b)=>rank(a)-rank(b));
+ VO.m=males[0]||null;
  const base=vs[0]||null;
  VO.fFake=!VO.f;VO.mFake=!VO.m;
  if(!VO.f)VO.f=VO.m&&vs.find(v=>v!==VO.m)||base;
@@ -627,9 +632,10 @@ function voiceInfo(){
 let playingBtn=null;
 function speak(t,g,btn){if(!canSpeak)return;g=g==="m"?"m":"f";try{
  speechSynthesis.cancel();if(playingBtn)playingBtn.classList.remove("playing");
- const u=new SpeechSynthesisUtterance(t);u.lang="en-US";u.rate=S.slow?.72:.95;
+ const u=new SpeechSynthesisUtterance(t);u.lang="en-US";u.rate=g==="m"?(S.slow?.68:.88):(S.slow?.72:.95);
  const v=g==="m"?VO.m:VO.f;if(v){u.voice=v;u.lang=v.lang}
- u.pitch=g==="m"?(VO.mFake?.6:1):(VO.fFake?1.35:1);
+ /* nam: hạ cao độ, đọc chậm hơn một chút cho trầm và ấm */
+ u.pitch=g==="m"?(VO.mFake?.55:.78):(VO.fFake?1.35:1);
  if(btn){playingBtn=btn;btn.classList.add("playing");u.onend=u.onerror=()=>btn.classList.remove("playing")}
  speechSynthesis.speak(u)}catch(e){}}
 function spkBtn(t){if(!canSpeak)return"";const a=esc(t);return'<span class="vp"><button class="vbtn" data-act="speak" data-g="m" data-t="'+a+'" title="Nghe giọng nam" aria-label="Nghe giọng nam: '+a+'">'+I.spk+'<span class="vg" aria-hidden="true">👨</span></button><button class="vbtn" data-act="speak" data-g="f" data-t="'+a+'" title="Nghe giọng nữ" aria-label="Nghe giọng nữ: '+a+'">'+I.spk+'<span class="vg" aria-hidden="true">👩</span></button></span>'}

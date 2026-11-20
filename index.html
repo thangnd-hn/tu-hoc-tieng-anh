@@ -281,6 +281,22 @@ kbd{font:600 .72rem var(--f-body);border:1px solid var(--line);border-bottom-wid
 .toast{position:fixed;left:50%;transform:translateX(-50%);bottom:calc(18px + env(safe-area-inset-bottom,0px));z-index:20;background:var(--ink);color:var(--bg);padding:10px 16px;border-radius:12px;font-size:.875rem;max-width:min(560px,calc(100vw - 32px));box-shadow:0 8px 24px rgba(0,0,0,.25)}
 .overlay{position:fixed;inset:0;z-index:30;background:rgba(8,12,18,.5);display:grid;place-items:center;padding:16px}
 .panel{background:var(--surface);border-radius:16px;padding:18px;width:min(560px,100%);display:flex;flex-direction:column;gap:10px}
+.opt.sel{border-color:var(--accent);background:var(--accent-soft)}
+.to-time{font-weight:700;color:var(--ink)}
+.to-time.warn{color:var(--bad)}
+.kn-card{background:var(--surface);border:1px solid var(--line);border-radius:16px;padding:16px 18px;display:flex;flex-direction:column;gap:10px}
+.kn-card h3{font-size:1.1rem}
+.kn-formula{background:var(--sunk);border-radius:10px;padding:10px 12px;font:600 .9rem/1.6 ui-monospace,Consolas,monospace;overflow-x:auto;white-space:pre-wrap}
+.kn-ex{margin:0;padding-left:18px;display:flex;flex-direction:column;gap:4px}
+.kn-ex li{line-height:1.45}
+.kn-ex li span{color:var(--muted);font-size:.86rem;display:block}
+.kn-pass{background:var(--surface);border:1px solid var(--line);border-radius:14px;padding:16px;line-height:1.7;white-space:pre-wrap;font-size:.98rem}
+.kn-line{display:flex;gap:10px;align-items:flex-start;padding:8px 0;border-top:1px dashed var(--line)}
+.kn-line:first-child{border-top:0}
+.kn-line .who{font:700 .78rem var(--f-display);min-width:58px;color:var(--accent)}
+.kn-write{width:100%;min-height:260px;border:1px solid var(--line);border-radius:12px;padding:12px;font:1rem/1.6 var(--f-body);background:var(--surface);color:var(--ink);resize:vertical}
+.kn-check{display:flex;flex-direction:column;gap:4px;font-size:.9rem}
+.kn-check label{display:flex;gap:8px;align-items:flex-start}
 .lv-badge{display:inline-grid;place-items:center;min-width:72px;height:72px;padding:0 10px;border-radius:18px;background:var(--accent);color:var(--on-accent);font:700 1.8rem var(--f-display);flex:none}
 .lv-badge.sm{min-width:44px;height:36px;border-radius:10px;font-size:1rem}
 .lv-row{display:grid;grid-template-columns:120px 1fr 44px;gap:10px;align-items:center;font-size:.88rem}
@@ -332,6 +348,8 @@ kbd{font:600 .72rem var(--f-body);border:1px solid var(--line);border-bottom-wid
 <main class="wrap main">
   <section id="v-lo-trinh" class="view"></section>
   <section id="v-trinh-do" class="view" hidden></section>
+  <section id="v-toeic" class="view" hidden></section>
+  <section id="v-ky-nang" class="view" hidden></section>
   <section id="v-tu-vung" class="view" hidden></section>
   <section id="v-mau-cau" class="view" hidden></section>
   <section id="v-the-nho" class="view" hidden></section>
@@ -602,7 +620,7 @@ const APPS=[
 
 /* ========== TRẠNG THÁI ========== */
 const NG=["gt","kt","ks","it"];
-const TABS=[["lo-trinh","Lộ trình"],["trinh-do","Trình độ"],["tu-vung","Từ vựng"],["mau-cau","Mẫu câu"],["the-nho","Thẻ nhớ"],["kiem-tra","Kiểm tra"],["thanh-ngu","Thành ngữ"],["dich","Dịch"],["hoi-thoai","Hội thoại"]];
+const TABS=[["lo-trinh","Lộ trình"],["trinh-do","Trình độ"],["toeic","Luyện TOEIC"],["ky-nang","Kỹ năng thi"],["tu-vung","Từ vựng"],["mau-cau","Mẫu câu"],["the-nho","Thẻ nhớ"],["kiem-tra","Kiểm tra"],["thanh-ngu","Thành ngữ"],["dich","Dịch"],["hoi-thoai","Hội thoại"]];
 /* ========== HỒ SƠ NGƯỜI HỌC (tên, tuổi) ==========
    Lưu trong trình duyệt của máy này, không gửi đi đâu. Mỗi người có tiến độ riêng.
    Người đầu tiên tạo hồ sơ nhận luôn tiến độ đã lưu từ trước (khóa cũ "tieng-anh-nghe-v1"). */
@@ -617,8 +635,8 @@ let saved={};
 try{saved=JSON.parse(localStorage.getItem(KEY))||{}}catch(e){}
 const S={tab:"lo-trinh",nganh:DATA[saved.nganh]?saved.nganh:"kt",planNg:DATA[saved.planNg]?saved.planNg:"kt",topic:-1,q:"",
  known:new Set(saved.known||[]),done:new Set(saved.done||[]),slow:!!saved.slow,onlyNew:false,dir:"en",g:saved.g==="m"?"m":"f",trText:"",trDir:"auto",
- tnL:["vi","sl"].includes(saved.tnL)?saved.tnL:"en",tnTag:"",tnQ:"",tnFav:new Set(saved.tnFav||[]),tnOnlyFav:false,tnMode:"list",tnN:60,tests:Array.isArray(saved.tests)?saved.tests:[]};
-function save(){try{localStorage.setItem(KEY,JSON.stringify({nganh:S.nganh,planNg:S.planNg,known:[...S.known],done:[...S.done],slow:S.slow,g:S.g,tnL:S.tnL,tnFav:[...S.tnFav],tests:S.tests}))}catch(e){}}
+ tnL:["vi","sl"].includes(saved.tnL)?saved.tnL:"en",tnTag:"",tnQ:"",tnFav:new Set(saved.tnFav||[]),tnOnlyFav:false,tnMode:"list",tnN:60,tests:Array.isArray(saved.tests)?saved.tests:[],toeic:Array.isArray(saved.toeic)?saved.toeic:[],wr:saved.wr||{}};
+function save(){try{localStorage.setItem(KEY,JSON.stringify({nganh:S.nganh,planNg:S.planNg,known:[...S.known],done:[...S.done],slow:S.slow,g:S.g,tnL:S.tnL,tnFav:[...S.tnFav],tests:S.tests,toeic:S.toeic,wr:S.wr}))}catch(e){}}
 let FC=null, QZ=null;
 
 /* ========== TIỆN ÍCH ========== */
@@ -707,7 +725,7 @@ function chips(kind){
 function render(){
  renderSeg();renderTabs();
  TABS.forEach(t=>{$("#v-"+t[0]).hidden=t[0]!==S.tab});
- ({"lo-trinh":renderPlan,"tu-vung":renderWords,"mau-cau":renderSents,"the-nho":renderFC,"kiem-tra":renderQZ,"dich":renderTr,"thanh-ngu":renderTN,"hoi-thoai":renderHC,"trinh-do":renderLV})[S.tab]();
+ ({"lo-trinh":renderPlan,"tu-vung":renderWords,"mau-cau":renderSents,"the-nho":renderFC,"kiem-tra":renderQZ,"dich":renderTr,"thanh-ngu":renderTN,"hoi-thoai":renderHC,"trinh-do":renderLV,"toeic":renderTO,"ky-nang":renderKN})[S.tab]();
 }
 
 /* ========== LỘ TRÌNH ========== */
@@ -1258,6 +1276,351 @@ function renderLV(){
 }
 function lvSayCur(){const q=LV&&LV.qs[LV.i];if(q&&q.sec==="l")speak(q.q,S.g)}
 
+/* ========== LUYỆN THI TOEIC ==========
+   Nội dung tự soạn theo dạng bài TOEIC (không chép từ sách hay đề thi có bản quyền):
+   từ vựng công sở theo chủ đề, Part 5 (điền câu), Part 2 (nghe câu hỏi, chọn câu đáp),
+   đề luyện 30 câu bấm giờ 15 phút. Kết quả lưu theo từng người học. */
+const TW=[
+{t:"Văn phòng & hành chính",ic:"🗂️",w:[["memo","bản ghi nhớ nội bộ"],["deadline","hạn chót"],["supervisor","người giám sát"],["colleague","đồng nghiệp"],["assignment","nhiệm vụ được giao"],["agenda","chương trình họp"],["office supplies","văn phòng phẩm"],["photocopier","máy photo"],["file cabinet","tủ hồ sơ"],["reception desk","quầy lễ tân"],["schedule","lịch trình"],["reschedule","dời lịch"],["notify","thông báo"],["confidential","bảo mật"],["attachment","tệp đính kèm"],["reminder","lời nhắc"],["procedure","quy trình"],["approve","phê duyệt"],["headquarters","trụ sở chính"],["branch office","văn phòng chi nhánh"]]},
+{t:"Nhân sự & tuyển dụng",ic:"👥",w:[["applicant","người nộp đơn"],["candidate","ứng viên"],["résumé","sơ yếu lý lịch"],["qualification","bằng cấp, năng lực"],["job interview","buổi phỏng vấn"],["hire","tuyển, thuê"],["recruit","tuyển dụng"],["vacancy","vị trí còn trống"],["salary","lương"],["benefits","phúc lợi"],["promotion","sự thăng chức"],["resign","từ chức"],["retire","nghỉ hưu"],["employee","nhân viên"],["employer","người sử dụng lao động"],["personnel","nhân sự"],["probation period","thời gian thử việc"],["performance review","đánh giá hiệu quả công việc"],["training session","buổi đào tạo"],["full-time","toàn thời gian"]]},
+{t:"Hợp đồng & pháp lý",ic:"📜",w:[["contract","hợp đồng"],["agreement","thỏa thuận"],["terms and conditions","điều khoản và điều kiện"],["clause","điều khoản"],["negotiate","đàm phán"],["party","bên (trong hợp đồng)"],["obligation","nghĩa vụ"],["expire","hết hạn"],["renew","gia hạn"],["terminate","chấm dứt"],["comply with","tuân thủ"],["regulation","quy định"],["liability","trách nhiệm pháp lý"],["dispute","tranh chấp"],["amendment","bản sửa đổi"],["valid","còn hiệu lực"],["breach","sự vi phạm"],["signature","chữ ký"],["legal advisor","cố vấn pháp lý"],["binding","có tính ràng buộc"]]},
+{t:"Marketing & bán hàng",ic:"📣",w:[["advertisement","quảng cáo"],["campaign","chiến dịch"],["promotional offer","ưu đãi khuyến mãi"],["customer","khách hàng"],["survey","cuộc khảo sát"],["market share","thị phần"],["competitor","đối thủ cạnh tranh"],["launch","ra mắt (sản phẩm)"],["brand","thương hiệu"],["target audience","nhóm khách hàng mục tiêu"],["discount","giảm giá"],["sales figures","số liệu bán hàng"],["retailer","nhà bán lẻ"],["wholesale","bán buôn"],["demand","nhu cầu"],["feedback","ý kiến phản hồi"],["customer loyalty","sự trung thành của khách hàng"],["strategy","chiến lược"],["consumer","người tiêu dùng"],["trade show","hội chợ thương mại"]]},
+{t:"Tài chính & ngân hàng",ic:"🏦",w:[["account","tài khoản"],["balance","số dư"],["deposit","gửi tiền; tiền đặt cọc"],["withdraw","rút tiền"],["loan","khoản vay"],["interest rate","lãi suất"],["invoice","hóa đơn"],["receipt","biên lai"],["budget","ngân sách"],["expense","khoản chi"],["revenue","doanh thu"],["profit","lợi nhuận"],["investment","khoản đầu tư"],["transaction","giao dịch"],["reimburse","hoàn trả chi phí"],["audit","kiểm toán"],["quarterly","hằng quý"],["fiscal year","năm tài chính"],["overdue","quá hạn"],["estimate","bản ước tính"]]},
+{t:"Mua hàng & giao nhận",ic:"📦",w:[["place an order","đặt hàng"],["supplier","nhà cung cấp"],["vendor","nhà cung ứng"],["shipment","lô hàng"],["delivery","sự giao hàng"],["warehouse","nhà kho"],["inventory","hàng tồn kho"],["in stock","còn hàng"],["out of stock","hết hàng"],["quote","bảng báo giá"],["purchase","mua; việc mua"],["refund","hoàn tiền"],["exchange","đổi hàng"],["warranty","bảo hành"],["defective","bị lỗi"],["tracking number","mã vận đơn"],["shipping fee","phí vận chuyển"],["in bulk","với số lượng lớn"],["courier","dịch vụ chuyển phát"],["order form","mẫu đơn đặt hàng"]]},
+{t:"Sản xuất & kỹ thuật",ic:"🏭",w:[["factory","nhà máy"],["assembly line","dây chuyền lắp ráp"],["equipment","thiết bị"],["machinery","máy móc"],["maintenance","bảo trì"],["quality control","kiểm soát chất lượng"],["output","sản lượng"],["capacity","công suất"],["manufacture","sản xuất"],["component","linh kiện"],["prototype","mẫu thử"],["inspection","kiểm tra"],["safety regulations","quy định an toàn"],["malfunction","trục trặc"],["repair","sửa chữa"],["operate","vận hành"],["efficiency","hiệu suất"],["raw materials","nguyên liệu thô"],["technician","kỹ thuật viên"],["upgrade","nâng cấp"]]},
+{t:"Đi lại & công tác",ic:"✈️",w:[["itinerary","lịch trình chuyến đi"],["reservation","sự đặt chỗ"],["boarding pass","thẻ lên máy bay"],["departure","sự khởi hành"],["arrival","sự đến nơi"],["delay","sự chậm trễ"],["aisle seat","ghế cạnh lối đi"],["luggage","hành lý"],["customs","hải quan"],["accommodation","chỗ ở"],["business trip","chuyến công tác"],["travel expenses","chi phí đi lại"],["connecting flight","chuyến bay nối chuyến"],["layover","điểm dừng quá cảnh"],["fare","giá vé"],["destination","điểm đến"],["terminal","nhà ga"],["round trip","khứ hồi"],["rental car","xe thuê"],["travel agency","đại lý du lịch"]]},
+{t:"Hội họp & sự kiện",ic:"🎤",w:[["conference","hội nghị"],["seminar","hội thảo"],["workshop","buổi tập huấn"],["attendee","người tham dự"],["register","đăng ký"],["venue","địa điểm tổ chức"],["keynote speaker","diễn giả chính"],["presentation","bài thuyết trình"],["handout","tài liệu phát tay"],["postpone","hoãn lại"],["banquet","tiệc lớn"],["catering","dịch vụ ăn uống"],["RSVP","phản hồi có tham dự hay không"],["minutes","biên bản cuộc họp"],["host","đăng cai, tổ chức"],["participate","tham gia"],["organizer","ban tổ chức"],["agenda item","mục trong chương trình"],["audience","khán giả, người nghe"],["award ceremony","lễ trao giải"]]},
+{t:"Nhà hàng & dịch vụ",ic:"🍽️",w:[["reserve a table","đặt bàn"],["appetizer","món khai vị"],["main course","món chính"],["beverage","đồ uống"],["bill","hóa đơn"],["tip","tiền boa"],["complimentary","miễn phí, tặng kèm"],["patron","khách quen"],["chef","đầu bếp"],["cater","cung cấp đồ ăn"],["dietary restriction","yêu cầu kiêng ăn"],["review","bài đánh giá"],["service charge","phí dịch vụ"],["takeout","đồ mang về"],["dine","dùng bữa"],["refill","rót thêm"],["diner","thực khách"],["specialty","món đặc sản"],["vegetarian option","món chay"],["waiting list","danh sách chờ"]]}
+];
+/* Part 5: [câu, [đáp án], đúng, giải thích, dạng] */
+const P5=[
+["The new software will help employees work more ___.",["efficiently","efficient","efficiency","efficiencies"],0,"Bổ nghĩa cho động từ work cần trạng từ.","Từ loại"],
+["Ms. Tran is responsible ___ training new staff.",["for","of","to","with"],0,"Cụm cố định: responsible for.","Giới từ"],
+["The meeting has been postponed ___ next Monday.",["until","since","during","among"],0,"Hoãn đến một thời điểm: until.","Giới từ"],
+["All applicants must submit ___ résumés by Friday.",["their","them","they","theirs"],0,"Trước danh từ cần tính từ sở hữu their.","Đại từ"],
+["The quarterly report ___ to the board last week.",["was sent","sent","is sending","has sent"],0,"Báo cáo được gửi đi, có last week: bị động quá khứ.","Bị động"],
+["Mr. Lee ___ for the company since 2015.",["has worked","works","worked","is working"],0,"Since + mốc thời gian dùng hiện tại hoàn thành.","Thì động từ"],
+["___ the weather was bad, the event was a success.",["Although","Because","Despite","However"],0,"Hai vế tương phản, sau đó là mệnh đề: Although.","Liên từ"],
+["Please contact the front desk if you need ___ assistance.",["further","farther","furthest","furthermore"],0,"Further assistance: thêm sự trợ giúp.","Từ vựng"],
+["The company plans to ___ its operations to Asia next year.",["expand","expanse","expansion","expansive"],0,"Sau to cần động từ nguyên mẫu.","Từ loại"],
+["Customers can return items ___ 30 days of purchase.",["within","between","among","along"],0,"Trong vòng bao nhiêu ngày: within.","Giới từ"],
+["The manager asked us to finish the project as ___ as possible.",["quickly","quick","quicker","quickest"],0,"As + trạng từ + as possible bổ nghĩa cho finish.","So sánh"],
+["Neither the director ___ her assistant attended the conference.",["nor","or","and","but"],0,"Neither đi với nor.","Liên từ"],
+["The training session is ___ for all new employees.",["mandatory","mandate","mandated","mandating"],0,"Sau is cần tính từ: mandatory (bắt buộc).","Từ loại"],
+["Sales increased ___ 15 percent in the second quarter.",["by","at","on","of"],0,"Tăng thêm bao nhiêu: increase by.","Giới từ"],
+["By the time the shipment arrives, we ___ the warehouse.",["will have cleared","cleared","have cleared","clear"],0,"Xong trước một mốc tương lai: tương lai hoàn thành.","Thì động từ"],
+["The receptionist will ___ you to the meeting room.",["direct","direction","directly","director"],0,"Sau will cần động từ: direct (chỉ đường).","Từ loại"],
+["Our new product line has been very ___ with young customers.",["popular","popularity","popularly","popularize"],0,"Sau very và been cần tính từ.","Từ loại"],
+["Please read the instructions ___ before using the machine.",["carefully","careful","care","caring"],0,"Bổ nghĩa cho read cần trạng từ.","Từ loại"],
+["The hotel offers a free shuttle service ___ the airport.",["to","at","in","on"],0,"Đưa đón đến sân bay: to the airport.","Giới từ"],
+["Ms. Park, ___ joined the team last month, will lead the project.",["who","which","whose","whom"],0,"Chỉ người, làm chủ ngữ cho joined: who.","Đại từ"],
+["If the delivery is late again, we ___ another supplier.",["will contact","would contact","contacted","contacting"],0,"Câu điều kiện loại 1: If + hiện tại, will + động từ.","Thì động từ"],
+["The proposal must be approved ___ it can be implemented.",["before","after","while","unless"],0,"Phải duyệt trước rồi mới thực hiện: before.","Liên từ"],
+["The company's profits were ___ than expected this year.",["higher","high","highest","more high"],0,"Có than nên dùng so sánh hơn.","So sánh"],
+["Employees are encouraged ___ in the annual survey.",["to participate","participating","participate","participated"],0,"Be encouraged to + động từ.","Động từ"],
+["The CEO will make an ___ about the merger tomorrow.",["announcement","announce","announced","announcing"],0,"Sau mạo từ an cần danh từ.","Từ loại"],
+["The parking lot will be closed ___ maintenance this weekend.",["for","by","from","with"],0,"Đóng cửa vì mục đích gì: for maintenance.","Giới từ"],
+["We need to hire someone ___ can speak both English and Korean.",["who","which","what","whose"],0,"Someone chỉ người, làm chủ ngữ: who.","Đại từ"],
+["The new policy will take ___ on January 1.",["effect","affect","effective","effectively"],0,"Cụm cố định: take effect (có hiệu lực).","Từ vựng"],
+["Please let me know ___ you need any further information.",["if","unless","so","although"],0,"Cho tôi biết nếu bạn cần: if.","Liên từ"],
+["The invoice ___ be paid within 30 days.",["must","has","ought","needing"],0,"Must + động từ nguyên mẫu.","Động từ"],
+["The marketing team worked ___ to meet the deadline.",["hard","hardly","hardness","harder than"],0,"Hard là trạng từ (chăm chỉ); hardly nghĩa là hầu như không.","Từ loại"],
+["Mr. Kim has ___ experience in international sales.",["extensive","extend","extension","extensively"],0,"Trước danh từ experience cần tính từ.","Từ loại"],
+["The seminar was so ___ that many attendees asked for a second session.",["informative","inform","information","informed"],0,"So + tính từ + that; informative: nhiều thông tin bổ ích.","Từ loại"],
+["The elevator is out of order, so please use the stairs ___.",["instead","rather","besides","although"],0,"Thay vào đó: instead.","Từ vựng"],
+["Applications received after the deadline will not be ___.",["considered","considerate","considering","consideration"],0,"Bị động will be + phân từ hai.","Bị động"],
+["The conference room is available ___ 2 p.m. and 4 p.m.",["between","among","from","during"],0,"Between ... and ...","Giới từ"],
+["The factory ___ more than 500 workers.",["employs","employees","employment","employer"],0,"Câu cần động từ chính, chủ ngữ số ít: employs.","Từ loại"],
+["We apologize for any ___ this delay may cause.",["inconvenience","inconvenient","inconveniently","inconvenienced"],0,"Sau any cần danh từ.","Từ loại"],
+["___ attending the workshop should register online.",["Those","Them","Which","Whoever"],0,"Those attending: những người tham dự.","Đại từ"],
+["The shipment was delayed ___ bad weather.",["due to","because","although","so that"],0,"Sau chỗ trống là cụm danh từ: due to.","Giới từ"],
+["Ms. Nguyen is the ___ qualified candidate for the position.",["most","more","much","very"],0,"The + most + tính từ dài: so sánh nhất.","So sánh"],
+["The budget ___ by the finance department every year.",["is reviewed","reviews","reviewing","has reviewed"],0,"Ngân sách được xem xét: bị động hiện tại.","Bị động"],
+["Please ___ the attached form and return it to HR.",["complete","completion","completely","completed"],0,"Câu mệnh lệnh bắt đầu bằng động từ nguyên mẫu.","Từ loại"],
+["The company has decided to ___ its contract with the supplier.",["renew","renewal","renewable","renewed"],0,"Sau to cần động từ nguyên mẫu.","Từ loại"],
+["Mr. Chen will be ___ charge of the new branch in Da Nang.",["in","on","at","for"],0,"Cụm cố định: in charge of (phụ trách).","Giới từ"],
+["Tickets can be purchased ___ online or at the box office.",["either","neither","both","whether"],0,"Either ... or ...","Liên từ"],
+["This year's sales figures were ___ than last year's.",["better","good","best","well"],0,"Có than nên dùng so sánh hơn của good: better.","So sánh"],
+["All visitors must sign in ___ arrival.",["upon","onto","into","over"],0,"Upon arrival: ngay khi đến.","Giới từ"],
+["She has been working here ___ five years.",["for","since","during","ago"],0,"For + khoảng thời gian.","Giới từ"],
+["The manager was pleased ___ the results of the survey.",["with","at","to","for"],0,"Pleased with: hài lòng với.","Giới từ"],
+["The product is ___ available in three colors.",["currently","current","currency","currents"],0,"Bổ nghĩa cho tính từ available cần trạng từ.","Từ loại"],
+["Due to high demand, the item is temporarily out ___ stock.",["of","from","in","off"],0,"Cụm cố định: out of stock (hết hàng).","Giới từ"],
+["Mr. Patel asked his assistant to ___ the documents to the client.",["forward","forwarding","forwarded","forwards"],0,"Ask somebody to + động từ nguyên mẫu.","Động từ"],
+["The new branch is expected to open ___ the end of the year.",["by","until","since","on"],0,"Hạn chót: by the end of.","Giới từ"],
+["We received ___ complaints about the new service.",["several","much","a little","every"],0,"Complaints là danh từ đếm được số nhiều: several.","Từ vựng"],
+["The workshop will focus ___ improving customer service.",["on","at","in","for"],0,"Focus on.","Giới từ"],
+["The renovation of the lobby is ___ complete.",["almost","most","mostly of","the most"],0,"Almost complete: gần xong.","Từ vựng"],
+["Please submit your expense report ___ the end of the month.",["by","until","at","in"],0,"Nộp trước hạn: by.","Giới từ"],
+["The director thanked the staff ___ their hard work.",["for","with","about","on"],0,"Thank somebody for something.","Giới từ"],
+["The store ___ open until 9 p.m. during the holiday season.",["will remain","remaining","remain","remains to"],0,"Chủ ngữ số ít, nói về tương lai: will remain.","Thì động từ"]
+];
+/* Part 2: [câu hỏi, [3 câu đáp], đúng, nghĩa câu hỏi] */
+const P2=[
+["When does the meeting start?",["At ten o'clock.","In the conference room.","Yes, it started."],0,"Cuộc họp bắt đầu lúc nào?"],
+["Where can I find the printer?",["It's next to the copy room.","At three o'clock.","I printed it yesterday."],0,"Máy in ở đâu?"],
+["Who is in charge of the new project?",["Ms. Lee is.","Next Monday.","It's a big project."],0,"Ai phụ trách dự án mới?"],
+["Would you like some coffee?",["Yes, please.","It's on the table.","I like the office."],0,"Bạn dùng chút cà phê nhé?"],
+["Why was the shipment delayed?",["Because of the storm.","It's in the warehouse.","By truck."],0,"Vì sao lô hàng bị chậm?"],
+["How long will the training take?",["About two hours.","In room five.","Mr. Kim will train us."],0,"Buổi đào tạo kéo dài bao lâu?"],
+["Have you sent the invoice yet?",["Yes, this morning.","It's very expensive.","Her voice was clear."],0,"Bạn đã gửi hóa đơn chưa?"],
+["Could you help me move these boxes?",["Sure, where do they go?","They're made of cardboard.","I moved last year."],0,"Bạn giúp tôi chuyển mấy thùng này được không?"],
+["Which hotel are you staying at?",["The one near the station.","For three nights.","I stayed at home."],0,"Bạn ở khách sạn nào?"],
+["How much does the ticket cost?",["Twenty dollars.","Two tickets, please.","It takes a lot of time."],0,"Vé giá bao nhiêu?"],
+["Isn't the report due today?",["No, it's due tomorrow.","I'll report it to him.","Yes, at the front door."],0,"Báo cáo không phải hạn hôm nay sao?"],
+["Why don't we take a short break?",["That's a good idea.","Because it broke.","It's not that short."],0,"Sao mình không nghỉ một chút nhỉ?"],
+["When will the new manager arrive?",["Sometime next week.","At the main office.","She managed it well."],0,"Khi nào quản lý mới đến?"],
+["Do you prefer the morning or the afternoon session?",["The afternoon works better for me.","Yes, I do.","It was a long session."],0,"Bạn thích buổi sáng hay buổi chiều?"],
+["Where should I put these files?",["On my desk, please.","They're very important.","Last Friday."],0,"Tôi để mấy hồ sơ này ở đâu?"],
+["Who should I contact about my refund?",["The customer service desk.","About fifty dollars.","Yes, it's refundable."],0,"Tôi liên hệ ai về việc hoàn tiền?"],
+["How did the presentation go?",["Very well, thank you.","By train.","It's on slide five."],0,"Buổi thuyết trình thế nào?"],
+["Can I pay by credit card?",["Of course.","It's a nice card.","I paid yesterday."],0,"Tôi trả bằng thẻ tín dụng được không?"],
+["What time does the store close?",["At nine p.m.","It's close to the bank.","The door is closed."],0,"Cửa hàng đóng cửa lúc mấy giờ?"],
+["Why hasn't the package arrived yet?",["The courier was delayed.","It's a large package.","Yes, it arrived."],0,"Sao gói hàng chưa đến?"],
+["Shall I book the conference room for Friday?",["Yes, that would be great.","It's a good book.","The room was small."],0,"Tôi đặt phòng họp cho thứ Sáu nhé?"],
+["Who's going to pick up the client from the airport?",["Mr. Tanaka will.","At gate twelve.","He picked it up."],0,"Ai sẽ đón khách hàng ở sân bay?"]
+];
+let TO={mode:"voc",topic:-1},TQ=null,toTimer=null;
+function toWords(ti){const o=[];TW.forEach((t,i)=>{if(ti>=0&&i!==ti)return;t.w.forEach(w=>o.push({en:w[0],vi:w[1],ti:i,id:"toeic|"+i+"|"+w[0]}))});return o}
+function toMix(opts,ans){const so=shuffle(opts.map((x,i)=>({x,ok:i===ans})));return{opts:so.map(z=>z.x),ans:so.findIndex(z=>z.ok)}}
+function toQ5(p){const m=toMix(p[1],p[2]);return{kind:"p5",label:"Part 5 · "+p[4],prompt:p[0],opts:m.opts,ans:m.ans,ex:p[3]}}
+function toQ2(p){const m=toMix(p[1],p[2]);return{kind:"p2",label:"Part 2 · Nghe hỏi đáp",say:p[0],prompt:p[0],opts:m.opts,ans:m.ans,ex:p[0]+" ("+p[3]+") → "+p[1][p[2]]}}
+function toQv(w,all){const so=shuffle([w,...shuffle(all.filter(x=>x.vi!==w.vi)).slice(0,3)]);return{kind:"v",label:"Từ vựng · "+TW[w.ti].t,say:w.en,prompt:w.en,opts:so.map(x=>x.vi),ans:so.indexOf(w),ex:w.en+" = "+w.vi}}
+function toStart(k){
+ clearInterval(toTimer);
+ const all=toWords(-1);let qs;
+ if(k==="p5")qs=shuffle(P5).map(toQ5);
+ else if(k==="p2")qs=shuffle(P2).map(toQ2);
+ else if(k==="vq"){const pool=toWords(TO.topic);qs=shuffle(pool).slice(0,10).map(w=>toQv(w,all))}
+ else qs=[...shuffle(P5).slice(0,20).map(toQ5),...shuffle(P2).slice(0,5).map(toQ2),...shuffle(all).slice(0,5).map(w=>toQv(w,all))];
+ TQ={k,qs,i:0,picked:-1,score:0,exam:k==="exam",t0:Date.now(),end:k==="exam"?Date.now()+15*60000:0,res:null};
+ if(TQ.exam)toTimer=setInterval(toTick,1000);
+}
+function toTick(){if(!TQ||!TQ.exam||TQ.res){clearInterval(toTimer);return}const left=Math.max(0,TQ.end-Date.now()),el=$("#toTime");if(el){el.textContent="⏱ "+Math.floor(left/60000)+":"+String(Math.floor(left/1000)%60).padStart(2,"0");el.classList.toggle("warn",left<120000)}if(left<=0){toFinish();toast("Hết giờ! Bài đã được nộp.")}}
+function toFinish(){
+ clearInterval(toTimer);if(!TQ||TQ.res)return;
+ const c={p5:[0,0],p2:[0,0],v:[0,0]};TQ.qs.forEach(q=>{c[q.kind][1]++;if(q.ok)c[q.kind][0]++});
+ const rd=(c.p5[0]+c.v[0])/((c.p5[1]+c.v[1])||1),all=(c.p5[0]+c.p2[0]+c.v[0])/TQ.qs.length;
+ const est=Math.max(5,Math.min(495,Math.round((5+rd*490)/5)*5));
+ TQ.res={c,pct:Math.round(all*100),est,secs:Math.round((Date.now()-TQ.t0)/1000)};
+ S.toeic.push({d:Date.now(),pct:TQ.res.pct,est,c,secs:TQ.res.secs});save();
+ TQ.i=TQ.qs.length;if(S.tab==="toeic")renderTO();
+}
+function toSayCur(){const q=TQ&&TQ.qs[TQ.i];if(q&&q.kind==="p2"&&canSpeak)speak(q.say,S.g)}
+function renderTO(){
+ const box=$("#v-toeic");
+ let h='<div class="tn-top"><div><p class="eyebrow" style="margin:0">Luyện thi TOEIC</p><h2 style="font-size:1.25rem">Nghe – Đọc trong môi trường công sở</h2></div>'+
+  '<div class="mini-seg" role="group" aria-label="Phần luyện">'+[["voc","Từ vựng"],["p5","Part 5"],["p2","Part 2"],["exam","Đề luyện"]].map(m=>'<button data-act="to-mode" data-m="'+m[0]+'" aria-pressed="'+(TO.mode===m[0])+'">'+m[1]+"</button>").join("")+"</div></div>";
+ if(TQ&&TQ.i<TQ.qs.length){box.innerHTML=h+toQuestionHTML();const b=$("#toNext");if(b&&TQ.picked>=0)b.focus({preventScroll:true});toTick();return}
+ if(TQ&&TQ.res){box.innerHTML=h+toResultHTML();return}
+ if(TQ&&!TQ.exam&&TQ.i>=TQ.qs.length){box.innerHTML=h+'<div class="done-box"><div class="pic lg">'+pic(TQ.score/TQ.qs.length>=.8?"🏆":"📘")+'</div><div class="score">'+TQ.score+"/"+TQ.qs.length+'</div><div class="row-c"><button class="btn pri" data-act="to-start" data-k="'+TQ.k+'">Làm lượt mới</button><button class="btn" data-act="to-quit">Quay lại</button></div></div>';return}
+ if(TO.mode==="voc"){
+  const list=toWords(TO.topic),kn=list.filter(w=>S.known.has(w.id)).length;
+  h+='<div class="chips" role="group" aria-label="Chủ đề"><button class="chip" data-act="to-topic" data-i="-1" aria-pressed="'+(TO.topic<0)+'"><span class="e">✳️</span>Tất cả <small>'+toWords(-1).length+"</small></button>"+TW.map((t,i)=>'<button class="chip" data-act="to-topic" data-i="'+i+'" aria-pressed="'+(TO.topic===i)+'"><span class="e">'+t.ic+"</span>"+t.t+" <small>"+t.w.length+"</small></button>").join("")+"</div>"+
+   '<div class="toolbar"><button class="btn pri" data-act="to-start" data-k="vq">Ôn nhanh 10 từ</button><span class="count" style="margin:0">'+list.length+" từ · đã thuộc "+kn+"</span></div>";
+  TW.forEach((t,i)=>{const g=list.filter(w=>w.ti===i);if(!g.length)return;h+='<h3 class="grp"><span class="pic sm" aria-hidden="true">'+pic(t.ic)+"</span>"+t.t+"<small>"+g.length+' từ</small></h3><div class="wgrid">'+g.map(w=>{const k=S.known.has(w.id);return'<article class="wcard'+(k?" is-known":"")+'"><div class="wtxt"><span class="en">'+esc(w.en)+'</span><span class="vi">'+esc(w.vi)+"</span>"+(canSpeak?'<div class="vrow">'+spkBtn(w.en)+"</div>":"")+'</div><div class="wact"><button class="ico knw" data-act="to-known" data-id="'+esc(w.id)+'" aria-pressed="'+k+'" title="Đánh dấu đã thuộc">'+I.check+"</button></div></article>"}).join("")+"</div>"});
+ }else if(TO.mode==="p5"){
+  h+='<div class="start"><div class="pic lg">'+pic("✍️")+'</div><h2 style="font-size:1.2rem">Part 5 · Điền vào câu</h2><p class="muted" style="margin:0;max-width:50ch">Mỗi câu có một chỗ trống và 4 lựa chọn. Dạng bài: từ loại, thì động từ, giới từ, liên từ, đại từ, so sánh. Trả lời xong có giải thích ngay. '+P5.length+' câu.</p><p class="muted" style="margin:0;font-size:.82rem">Mẹo: đọc kỹ từ đứng trước và sau chỗ trống, nhiều câu không cần dịch cả câu.</p><button class="btn pri big" data-act="to-start" data-k="p5">Bắt đầu luyện</button></div>';
+ }else if(TO.mode==="p2"){
+  h+='<div class="start"><div class="pic lg">'+pic("🎧")+'</div><h2 style="font-size:1.2rem">Part 2 · Nghe hỏi đáp</h2><p class="muted" style="margin:0;max-width:50ch">Nghe một câu hỏi, chọn câu đáp hợp lý nhất trong 3 lựa chọn. Câu hỏi hiện chữ sau khi trả lời. '+P2.length+' câu.</p><p class="muted" style="margin:0;font-size:.82rem">Mẹo: nghe kỹ từ để hỏi (When, Where, Who, Why, How) và cẩn thận đáp án có từ phát âm giống câu hỏi.</p><button class="btn pri big" data-act="to-start" data-k="p2"'+(canSpeak?"":" disabled")+">Bắt đầu luyện</button>"+(canSpeak?"":'<p class="muted" style="margin:0">Trình duyệt này không đọc được tiếng Anh.</p>')+"</div>";
+ }else{
+  h+='<div class="start" style="align-items:stretch;text-align:left"><div style="display:flex;gap:14px;align-items:center"><div class="pic lg" style="width:88px;height:88px">'+pic("⏱️")+'</div><div><h2 style="font-size:1.2rem">Đề luyện 30 câu · 15 phút</h2><p class="muted" style="margin:4px 0 0;font-size:.88rem">20 câu Part 5, 5 câu Part 2 (nghe), 5 câu từ vựng. Không xem đáp án trong lúc làm, hết giờ tự nộp bài.</p></div></div>'+
+   '<div class="row-c" style="justify-content:flex-start"><button class="btn pri big" data-act="to-start" data-k="exam">Bắt đầu làm bài</button></div></div><h3 class="sec-h" style="margin-top:24px">Kết quả các lần làm đề</h3>'+
+   (S.toeic.length?'<div class="slist">'+S.toeic.slice().reverse().map(t=>'<div class="srow"><span class="lv-badge sm" style="min-width:58px">'+t.est+'</span><div class="stxt"><div class="en">Đúng '+t.pct+"% · Part 5 "+t.c.p5[0]+"/"+t.c.p5[1]+" · Part 2 "+t.c.p2[0]+"/"+t.c.p2[1]+" · Từ vựng "+t.c.v[0]+"/"+t.c.v[1]+'</div><div class="vi">'+new Date(t.d).toLocaleDateString("vi-VN")+" · "+Math.floor(t.secs/60)+" phút "+(t.secs%60)+" giây · ước lượng điểm Đọc "+t.est+"/495</div></div></div>").join("")+"</div>":'<p class="muted" style="font-size:.85rem">Chưa làm đề nào.</p>');
+ }
+ box.innerHTML=h;
+}
+function toQuestionHTML(){
+ const q=TQ.qs[TQ.i],n=TQ.qs.length,a=TQ.picked>=0,ex=TQ.exam;
+ let prompt;
+ if(q.kind==="p2")prompt='<button class="btn pri big" data-act="to-play" data-t="'+esc(q.say)+'">🔊 Nghe câu hỏi</button>'+(a&&!ex?'<div class="q-prompt" style="font-size:1.1rem">'+esc(q.prompt)+"</div>":'<span class="muted" style="font-size:.8rem">'+(ex?"Câu hỏi chỉ được nghe, không hiện chữ":"Câu hỏi hiện chữ sau khi bạn trả lời")+"</span>");
+ else prompt='<div class="q-prompt">'+esc(q.prompt).replace("___",'<span style="border-bottom:2px solid var(--accent);padding:0 18px"></span>')+"</div>"+(q.kind==="v"&&canSpeak?spkBtn(q.say):"");
+ let h='<div class="qz"><div class="q-top"><span>Câu '+(TQ.i+1)+"/"+n+" · "+q.label+"</span>"+(ex?'<span id="toTime" class="to-time">⏱</span>':"<span>Đúng "+TQ.score+"</span>")+'</div><div class="fc-prog" style="margin:6px 0 0;max-width:none"><i style="width:'+Math.round(TQ.i/n*100)+'%"></i></div>'+
+  '<div class="q-card"><span class="q-ask">'+(q.kind==="p5"?"Chọn từ đúng điền vào chỗ trống":q.kind==="p2"?"Chọn câu đáp hợp lý nhất":"Nghĩa tiếng Việt là gì?")+"</span>"+prompt+'</div><div class="opts">'+
+  q.opts.map((o,j)=>{let cl="opt";if(a){if(ex){if(j===TQ.picked)cl+=" sel"}else{if(j===q.ans)cl+=" ok";else if(j===TQ.picked)cl+=" bad"}}return'<button class="'+cl+'" data-act="to-ans" data-j="'+j+'"'+(a?" disabled":"")+'><span class="k">'+"ABCD"[j]+"</span><span>"+esc(o)+"</span></button>"}).join("")+"</div>";
+ if(a&&!ex)h+='<div class="reveal"><div class="wtxt"><span class="vi">'+esc(q.ex)+"</span></div></div>";
+ h+='<div class="q-next">'+(ex?'<button class="btn" data-act="to-submit" style="margin-right:auto">Nộp bài</button>':'<button class="btn" data-act="to-quit" style="margin-right:auto">Dừng</button>')+(a?'<button class="btn pri" data-act="to-next" id="toNext">'+(TQ.i+1<n?"Câu tiếp →":ex?"Nộp bài":"Xem kết quả")+"</button>":"")+"</div></div>";
+ return h;
+}
+function toResultHTML(){
+ const r=TQ.res,wrong=TQ.qs.filter(q=>!q.ok);
+ return'<div class="done-box" style="max-width:680px;align-items:stretch;text-align:left"><div style="display:flex;gap:16px;align-items:center"><span class="lv-badge" style="min-width:96px">'+r.est+'</span><div><p class="eyebrow" style="margin:0">Ước lượng điểm Đọc TOEIC (thang 5–495)</p><h2 style="font-size:1.25rem">Đúng '+r.pct+"% · "+Math.floor(r.secs/60)+" phút "+(r.secs%60)+' giây</h2></div></div>'+
+  lvBar("Part 5",r.c.p5[0],r.c.p5[1])+lvBar("Part 2 (nghe)",r.c.p2[0],r.c.p2[1])+lvBar("Từ vựng",r.c.v[0],r.c.v[1])+
+  '<p class="muted" style="margin:0;font-size:.8rem">Điểm ước lượng chỉ dựa trên Part 5 và từ vựng của đề ngắn này, để theo dõi tiến bộ. Đề TOEIC thật có 200 câu (100 Nghe, 100 Đọc), điểm thật có thể khác.</p>'+
+  (wrong.length?'<h3 class="grp" style="margin:8px 0 0">Xem lại '+wrong.length+' câu sai</h3><div class="slist">'+wrong.map(q=>'<div class="srow"><div class="stxt"><div class="vi" style="font-size:.78rem">'+esc(q.label)+'</div><div class="en">'+esc(q.prompt)+'</div><div class="vi">Đáp án: <b>'+esc(q.opts[q.ans])+"</b> · "+esc(q.ex)+"</div></div></div>").join("")+"</div>":"<b>Đúng tất cả, rất giỏi!</b>")+
+  '<div class="row-c" style="justify-content:flex-start"><button class="btn pri" data-act="to-start" data-k="exam">Làm đề mới</button><button class="btn" data-act="to-quit">Quay lại</button></div></div>';
+}
+
+/* ========== KỸ NĂNG THI: phần còn thiếu so với bài thi IELTS/TOEIC ==========
+   Ngữ pháp có hệ thống (bài học + bài tập), đọc hiểu bài dài bấm giờ,
+   nghe hội thoại hai người (giọng nam, nữ), viết (email TOEIC, IELTS Task 1, Task 2).
+   Toàn bộ bài đọc, hội thoại, đề viết và bài mẫu là nội dung tự soạn. */
+const GL=[
+{t:"Hiện tại đơn và hiện tại tiếp diễn",ic:"🔁",sum:"Hiện tại đơn nói về thói quen, sự thật, lịch cố định. Hiện tại tiếp diễn nói về việc đang diễn ra lúc nói hoặc kế hoạch tạm thời.",
+ f:"Hiện tại đơn: S + V(s/es)   ·   He works in Hanoi.\nTiếp diễn:   S + am/is/are + V-ing   ·   He is working now.\nDấu hiệu: always, usually, every day  |  now, at the moment, this week",
+ ex:[["The office opens at 8 a.m. every day.","Văn phòng mở cửa lúc 8 giờ mỗi ngày."],["We are preparing the drawings for the client this week.","Tuần này chúng tôi đang chuẩn bị bản vẽ cho khách."],["Water boils at 100 degrees Celsius.","Nước sôi ở 100 độ C (sự thật)."]],
+ q:[["She usually ___ to work by motorbike.",["goes","is going","go","going"],0,"Usually: thói quen, hiện tại đơn."],["Look! The crane ___ the steel beam now.",["is lifting","lifts","lift","lifted"],0,"Now, Look!: đang diễn ra."],["Our team ___ on a new hotel project this month.",["is working","works","work","worked"],0,"This month: việc tạm thời đang diễn ra."],["The train ___ at 7:15 tomorrow morning.",["leaves","is leaving to","leave","left"],0,"Lịch trình cố định dùng hiện tại đơn."]]},
+{t:"Quá khứ đơn và hiện tại hoàn thành",ic:"⏮️",sum:"Quá khứ đơn: việc đã xong tại thời điểm xác định trong quá khứ. Hiện tại hoàn thành: việc liên quan đến hiện tại, không nói rõ lúc nào, hoặc kéo dài đến nay.",
+ f:"Quá khứ đơn:      S + V2/ed   ·   I finished it yesterday.\nHiện tại HT:      S + have/has + V3   ·   I have finished it.\nDấu hiệu: yesterday, last year, ago  |  already, yet, ever, since, for",
+ ex:[["We signed the contract last Friday.","Chúng tôi đã ký hợp đồng thứ Sáu tuần trước."],["I have worked here for six years.","Tôi đã làm ở đây sáu năm (đến nay)."],["Have you ever visited Singapore?","Bạn đã từng đến Singapore chưa?"]],
+ q:[["They ___ the building in 2019.",["completed","have completed","complete","are completing"],0,"In 2019 là thời điểm xác định: quá khứ đơn."],["I ___ the report yet.",["haven't finished","didn't finish","don't finish","not finished"],0,"Yet: hiện tại hoàn thành."],["She ___ in this company since 2020.",["has worked","worked","works","is work"],0,"Since + mốc: hiện tại hoàn thành."],["Two years ago, he ___ to Da Nang.",["moved","has moved","moves","have moved"],0,"Ago: quá khứ đơn."]]},
+{t:"Tương lai: will, be going to",ic:"⏭️",sum:"Will: quyết định ngay lúc nói, dự đoán, lời hứa. Be going to: dự định đã có từ trước hoặc dự đoán có căn cứ. Hiện tại tiếp diễn cũng dùng cho lịch hẹn đã sắp xếp.",
+ f:"Will:          S + will + V   ·   I'll call you back.\nBe going to:   S + am/is/are going to + V   ·   We're going to open a new branch.\nLịch hẹn:      I'm meeting the client at 3 p.m.",
+ ex:[["The phone is ringing. I'll answer it.","Điện thoại reo, để tôi nghe (quyết định ngay)."],["Look at those clouds. It's going to rain.","Mây đen kìa, trời sắp mưa (có căn cứ)."],["We're going to renovate the lobby next year.","Năm sau chúng tôi định cải tạo sảnh (dự định)."]],
+ q:[["I'm thirsty. — I ___ get you some water.",["will","am going to","going to","would"],0,"Quyết định ngay lúc nói: will."],["We ___ hire two more engineers. It's in the plan.",["are going to","will be","going","would"],0,"Dự định đã có kế hoạch: be going to."],["Be careful! You ___ fall.",["are going to","will be","going","goes"],0,"Dự đoán có căn cứ trước mắt."],["I promise I ___ send the files tonight.",["will","am going","going to","shall to"],0,"Lời hứa: will."]]},
+{t:"Câu bị động",ic:"🔄",sum:"Dùng khi người làm không quan trọng hoặc muốn nhấn mạnh đối tượng chịu tác động. Rất hay gặp trong báo cáo, kỹ thuật, TOEIC Part 5.",
+ f:"Cấu trúc: be (chia theo thì) + V3/ed (+ by ...)\nHiện tại: The rooms are cleaned daily.\nQuá khứ:  The bridge was built in 1998.\nHTHT:     The documents have been sent.\nModal:    The form must be signed.",
+ ex:[["The drawings were approved by the client.","Bản vẽ đã được khách hàng duyệt."],["English is spoken in many countries.","Tiếng Anh được nói ở nhiều nước."],["The meeting has been cancelled.","Cuộc họp đã bị hủy."]],
+ q:[["The new mall ___ next year.",["will be opened","will open by","opens by","is opening by"],0,"Tương lai bị động: will be + V3."],["All visitors ___ to wear helmets.",["are required","require","requiring","is required"],0,"Visitors số nhiều, bị động: are required."],["The report ___ yet.",["hasn't been finished","hasn't finished","didn't finish","isn't finish"],0,"Yet: hiện tại hoàn thành bị động."],["This form must ___ in black ink.",["be completed","complete","completed","be completing"],0,"Modal + be + V3."]]},
+{t:"Câu điều kiện loại 0, 1, 2, 3",ic:"🔀",sum:"Loại 0: sự thật. Loại 1: có thể xảy ra. Loại 2: không có thật ở hiện tại. Loại 3: không có thật trong quá khứ.",
+ f:"Loại 0: If + hiện tại, hiện tại          ·  If you heat ice, it melts.\nLoại 1: If + hiện tại, will + V          ·  If it rains, we will stay.\nLoại 2: If + quá khứ, would + V          ·  If I were you, I would accept.\nLoại 3: If + had V3, would have V3       ·  If we had left earlier, we would have caught it.",
+ ex:[["If the client agrees, we will start next week.","Nếu khách đồng ý, tuần sau ta bắt đầu."],["If I had more time, I would learn Japanese.","Nếu có thêm thời gian, tôi sẽ học tiếng Nhật."],["If she had checked the drawings, she would have found the mistake.","Nếu cô ấy kiểm bản vẽ thì đã phát hiện lỗi."]],
+ q:[["If I ___ you, I would ask for a raise.",["were","am","had been","will be"],0,"Loại 2, dùng were cho mọi ngôi."],["If the price ___ too high, we will choose another supplier.",["is","will be","were","had been"],0,"Loại 1: If + hiện tại."],["If we had booked earlier, we ___ a better seat.",["would have got","would get","will get","had got"],0,"Loại 3."],["If you mix blue and yellow, you ___ green.",["get","will got","would get","got"],0,"Loại 0: sự thật."]]},
+{t:"Mệnh đề quan hệ",ic:"🔗",sum:"Dùng who (người), which (vật), that (người hoặc vật, mệnh đề xác định), whose (sở hữu), where (nơi chốn), when (thời gian) để nối thêm thông tin cho danh từ.",
+ f:"who / which / that / whose / where / when\nThe engineer who designed it ...\nThe hotel where we stayed ...\nThe client whose project was delayed ...\nCó dấu phẩy (bổ sung thông tin) thì không dùng that.",
+ ex:[["The architect who designed this tower is Vietnamese.","Kiến trúc sư thiết kế tòa tháp này là người Việt."],["This is the hotel where we held the conference.","Đây là khách sạn nơi ta tổ chức hội nghị."],["Hanoi, which is the capital, has many lakes.","Hà Nội, thủ đô, có nhiều hồ."]],
+ q:[["The supplier ___ products were damaged has apologized.",["whose","who","which","where"],0,"Sở hữu: whose."],["This is the room ___ the training will take place.",["where","which","who","whose"],0,"Nơi chốn: where."],["The software ___ we bought last year is very slow.",["that","who","whose","where"],0,"Vật, mệnh đề xác định: that hoặc which."],["Mr. Nam, ___ is our manager, will join the call.",["who","that","which","whom"],0,"Người, có dấu phẩy: who (không dùng that)."]]},
+{t:"So sánh",ic:"⚖️",sum:"Tính từ ngắn thêm -er, -est; tính từ dài dùng more, most. Có dạng bất quy tắc: good-better-best, bad-worse-worst, far-further-furthest.",
+ f:"So sánh hơn:  short-er than / more + adj + than\nSo sánh nhất: the short-est / the most + adj\nBằng nhau:    as + adj + as\nCàng ... càng: The more you practise, the better you get.",
+ ex:[["This design is more practical than the first one.","Thiết kế này thực tế hơn cái đầu."],["It's the tallest building in the city.","Đây là tòa nhà cao nhất thành phố."],["The new office is not as big as the old one.","Văn phòng mới không lớn bằng văn phòng cũ."]],
+ q:[["This route is ___ than the highway.",["shorter","more short","shortest","the shorter"],0,"Tính từ ngắn: -er."],["She is the ___ employee in our team.",["most experienced","more experienced","experiencedest","much experienced"],0,"So sánh nhất tính từ dài."],["The results were ___ than we expected.",["worse","badder","more bad","worst"],0,"Bad → worse."],["The new model is as ___ as the old one.",["reliable","more reliable","most reliable","reliably"],0,"As + tính từ nguyên dạng + as."]]},
+{t:"Động từ + to V hoặc V-ing",ic:"🧩",sum:"Một số động từ đi với to V (want, decide, plan, agree, hope), một số đi với V-ing (enjoy, avoid, finish, suggest, consider, mind). Sau giới từ luôn dùng V-ing.",
+ f:"+ to V:   want, need, decide, plan, agree, hope, promise, refuse\n+ V-ing:  enjoy, avoid, finish, suggest, consider, mind, keep\nSau giới từ: interested in learning, before leaving, look forward to meeting",
+ ex:[["We decided to postpone the launch.","Chúng tôi quyết định hoãn ra mắt."],["I look forward to meeting you.","Tôi mong được gặp bạn."],["Please avoid using the elevator during the fire drill.","Tránh dùng thang máy khi diễn tập cháy."]],
+ q:[["They agreed ___ the contract.",["to sign","signing","sign","signed"],0,"Agree + to V."],["Would you mind ___ the window?",["opening","to open","open","opened"],0,"Mind + V-ing."],["She is interested in ___ abroad.",["working","to work","work","worked"],0,"Sau giới từ in: V-ing."],["He suggested ___ the meeting online.",["holding","to hold","hold","held"],0,"Suggest + V-ing."]]},
+{t:"Câu gián tiếp",ic:"💬",sum:"Thuật lại lời người khác: lùi thì một bậc khi động từ tường thuật ở quá khứ, đổi đại từ và trạng từ (today → that day, tomorrow → the next day). Câu hỏi gián tiếp không đảo trợ động từ.",
+ f:"Trực tiếp: She said, 'I am busy.'\nGián tiếp: She said (that) she was busy.\nCâu hỏi:   He asked where I lived.  (không: where did I live)\nYes/No:    He asked if/whether I was ready.",
+ ex:[["The manager said that the project was on schedule.","Quản lý nói dự án đúng tiến độ."],["She asked me if I could stay late.","Cô ấy hỏi tôi có thể ở lại muộn không."],["He told us to submit the report by Friday.","Anh ấy bảo chúng tôi nộp báo cáo trước thứ Sáu."]],
+ q:[["She said she ___ tired.",["was","is","has been being","be"],0,"Lùi thì: am → was."],["He asked me where I ___.",["worked","did I work","do I work","work did"],0,"Câu hỏi gián tiếp không đảo."],["The client asked ___ we could finish earlier.",["whether","what","that","which"],0,"Câu hỏi Yes/No: if hoặc whether."],["Mr. Lee told us ___ late again.",["not to be","don't be","not be","to not being"],0,"Mệnh lệnh phủ định: told sb not to V."]]},
+{t:"Liên từ và từ nối",ic:"🪢",sum:"Although/though + mệnh đề; despite/in spite of + danh từ hoặc V-ing; however/therefore đứng đầu câu, sau đó có dấu phẩy. Rất quan trọng cho bài viết IELTS và TOEIC Part 5–6.",
+ f:"Tương phản: although + S V  |  despite + N/V-ing  |  However, ...\nNguyên nhân: because + S V  |  because of / due to + N\nKết quả:    so  |  therefore, ...  |  as a result, ...\nBổ sung:    moreover, in addition, furthermore",
+ ex:[["Although the budget was small, the project succeeded.","Dù ngân sách nhỏ, dự án vẫn thành công."],["Despite the rain, the event continued.","Dù trời mưa, sự kiện vẫn tiếp tục."],["The supplier was late. Therefore, we changed the schedule.","Nhà cung cấp trễ, vì vậy chúng tôi đổi lịch."]],
+ q:[["___ the heavy traffic, he arrived on time.",["Despite","Although","Because","However"],0,"Sau chỗ trống là cụm danh từ: despite."],["The cost is high. ___, the quality is excellent.",["However","Although","Despite","Because"],0,"Đầu câu, có dấu phẩy, ý tương phản: However."],["The flight was cancelled ___ the storm.",["because of","because","although","so"],0,"Cụm danh từ: because of."],["Sales fell sharply. ___, the company cut costs.",["As a result","Although","Despite","Unless"],0,"Kết quả: As a result."]]}
+];
+const RD=[
+{t:"Email: chuyển văn phòng (dạng TOEIC Part 7)",ic:"📧",min:6,text:"To: All staff\nFrom: Linh Pham, Office Manager\nSubject: Office relocation\n\nDear colleagues,\n\nAs announced last month, our company will move to the new building at 25 Tran Duy Hung Street. The move will take place over the weekend of March 15–16. Please pack the items on your desk into the boxes provided by Thursday, March 13. Boxes can be collected from the reception area starting Monday.\n\nThe IT team will disconnect all computers on Friday afternoon at 3 p.m., so please save your work and log off before then. Staff will not have access to the old office after 6 p.m. on Friday.\n\nThe new office will open on Monday, March 17. Parking is available in the basement, but spaces are limited. Employees who wish to apply for a parking card should contact me by March 10.\n\nThank you for your cooperation.\n\nLinh Pham",
+ qs:[["What is the main purpose of the email?",["To give instructions about an office move","To announce a new manager","To invite staff to a party","To explain a new parking fee"],0,"Cả email hướng dẫn việc chuyển văn phòng."],["By when should staff pack their desks?",["March 13","March 10","March 15","March 17"],0,"Pack ... by Thursday, March 13."],["What will happen at 3 p.m. on Friday?",["Computers will be disconnected","The new office will open","Boxes will be delivered","Parking cards will be issued"],0,"The IT team will disconnect all computers ... at 3 p.m."],["What is suggested about parking at the new office?",["The number of spaces is limited","It is free for visitors","It is on the roof","It requires no application"],0,"Spaces are limited."]]},
+{t:"Thông báo tuyển dụng",ic:"📋",min:5,text:"GREENLINE HOTELS is looking for a FRONT OFFICE SUPERVISOR for our new 200-room hotel in Nha Trang.\n\nResponsibilities:\n- Supervise a team of eight receptionists\n- Handle guest complaints and special requests\n- Prepare weekly reports on room occupancy\n\nRequirements:\n- At least three years of experience in hotel front office work\n- Good English; a second foreign language is an advantage\n- Ability to work night shifts and weekends\n\nWe offer a competitive salary, free meals during shifts and accommodation for staff from other provinces.\n\nTo apply, send your résumé and a cover letter to jobs@greenline.example by April 30. Only shortlisted candidates will be contacted for an interview.",
+ qs:[["How many people will the supervisor manage?",["Eight","Three","Two hundred","Thirty"],0,"Supervise a team of eight receptionists."],["What is NOT mentioned as a requirement?",["A university degree","Hotel front office experience","Good English","Willingness to work night shifts"],0,"Không nhắc đến bằng đại học."],["What benefit is offered to staff from other provinces?",["Accommodation","A company car","Extra holidays","Free language classes"],0,"Accommodation for staff from other provinces."],["Who will be contacted for an interview?",["Only shortlisted candidates","All applicants","Current employees","Guests of the hotel"],0,"Only shortlisted candidates will be contacted."]]},
+{t:"Bài báo kinh doanh",ic:"📰",min:7,text:"Local Coffee Chain Cuts Plastic Waste\n\nBean & Leaf, a coffee chain with 40 shops across northern Vietnam, says it has reduced its use of single-use plastic by 60 percent in just one year. The company replaced plastic straws with rice-based straws and began offering a 10 percent discount to customers who bring their own cups.\n\n\"At first, we worried that the new straws would be too expensive,\" said operations director Hoang Minh. \"But because we buy them in large quantities from a local producer, the cost difference is now very small.\"\n\nThe discount program has been especially popular with office workers. According to the company, about one in four takeaway orders is now served in a customer's own cup.\n\nNot everyone is convinced, however. Some customers say the rice straws become soft after about an hour. The company says it is testing a new type of straw made from grass, which it hopes to introduce later this year.",
+ qs:[["What is the article mainly about?",["How a company reduced plastic use","A new coffee recipe","The opening of 40 new shops","Rising coffee prices"],0,"Ý chính: giảm rác nhựa."],["Why is the cost of the new straws no longer a big problem?",["They are bought in large quantities locally","The government pays for them","Customers pay extra","They are reused many times"],0,"Buy them in large quantities from a local producer."],["About what portion of takeaway orders use customers' own cups?",["25 percent","10 percent","40 percent","60 percent"],0,"One in four = 25%."],["What complaint do some customers have?",["The straws get soft","The cups are too small","The discount is too low","The shops are too crowded"],0,"Rice straws become soft after about an hour."],["What does the company plan to do?",["Test straws made from grass","Stop selling takeaway drinks","Raise the discount to 20 percent","Close some shops"],0,"Testing a new type of straw made from grass."]]},
+{t:"Bài học thuật (dạng IELTS Reading)",ic:"🌿",min:9,text:"Green Roofs in Tropical Cities\n\nA green roof is a roof partly or completely covered with plants growing in soil or another growing medium. Although green roofs have been common in parts of Europe for decades, they are a relatively recent feature in tropical Asian cities.\n\nSupporters point to several benefits. First, plants and soil absorb heat, which can lower the temperature of the roof surface by more than 20 degrees Celsius on a sunny day. This reduces the energy needed to cool the rooms below. Second, green roofs hold rainwater and release it slowly, which helps to reduce flooding during heavy storms, a common problem in fast-growing cities with large areas of concrete. Third, they provide small habitats for birds and insects.\n\nHowever, there are also challenges. A green roof adds weight to a building, so the structure must be designed or strengthened to carry the extra load, especially when the soil is wet. Maintenance is another issue: in the tropics, plants grow quickly and need regular trimming, and drainage systems must be kept clear of leaves. For these reasons, the initial cost of a green roof is usually higher than that of a conventional roof.\n\nResearchers suggest that the long-term savings in energy and the longer life of the waterproofing layer, which is protected from direct sunlight, can balance the higher initial investment. Several cities now offer incentives, such as allowing extra floor area, to encourage developers to include green roofs in new projects.",
+ qs:[["According to the passage, green roofs in tropical Asia are ...",["a fairly new idea","more common than in Europe","banned in most cities","only used on houses"],0,"Relatively recent feature in tropical Asian cities."],["How do green roofs help during heavy storms?",["They store water and release it slowly","They make buildings taller","They block strong winds","They produce electricity"],0,"Hold rainwater and release it slowly."],["Why must the building structure be considered?",["Green roofs add weight, especially when wet","Plants damage concrete quickly","Roof gardens attract too many visitors","Soil makes buildings hotter"],0,"Adds weight ... especially when the soil is wet."],["Which is mentioned as a maintenance task?",["Trimming plants and clearing drainage","Painting the roof every year","Replacing all soil monthly","Watering by hand every hour"],0,"Regular trimming, drainage kept clear."],["What can balance the higher initial cost?",["Energy savings and a longer-lasting waterproof layer","Selling the plants","Lower land prices","Government ownership of the roof"],0,"Long-term savings ... longer life of the waterproofing layer."]]}
+];
+const DL=[
+{t:"Đặt lịch họp với khách hàng",ic:"📅",lines:[["f","Good morning, this is Anna from Skyline Developments. I'm calling to arrange a meeting about the new office design."],["m","Hello Anna. Sure. When would be convenient for you?"],["f","Would Thursday afternoon work? Around two o'clock?"],["m","I'm afraid I'm on site all day Thursday. How about Friday morning at nine thirty?"],["f","Friday at nine thirty is fine. Should we meet at your office?"],["m","Yes, please. We're on the fifth floor. I'll send you the address and a parking pass by email."],["f","Great. Could you also bring the latest floor plans?"],["m","Of course. I'll print two copies. See you on Friday."]],
+ qs:[["Why is the woman calling?",["To arrange a meeting","To complain about a design","To cancel a contract","To ask for a job"],0,"Arrange a meeting about the new office design."],["Why can't the man meet on Thursday?",["He will be on site","He is on holiday","He has a training course","His office is closed"],0,"I'm on site all day Thursday."],["What will the man send by email?",["The address and a parking pass","The floor plans","An invoice","A contract"],0,"Send you the address and a parking pass."],["What does the woman ask the man to bring?",["The latest floor plans","A laptop","Coffee","Two contracts"],0,"Bring the latest floor plans."]]},
+{t:"Nhận phòng khách sạn",ic:"🏨",lines:[["m","Good evening. I have a reservation under the name David Chen."],["f","Welcome, Mr. Chen. Let me check. Yes, a double room for three nights, breakfast included."],["m","That's right. Is it possible to have a room on a higher floor? I'd like a quieter room."],["f","Certainly. I can give you room 1205 on the twelfth floor. It faces the river."],["m","Perfect. What time is breakfast served?"],["f","From six to ten in the restaurant on the second floor. Here is your key card."],["m","Thank you. And could you book a taxi to the airport for Friday at seven a.m.?"],["f","No problem. I'll arrange it and leave a reminder note in your room."]],
+ qs:[["How long will the man stay?",["Three nights","Two nights","One week","One night"],0,"A double room for three nights."],["Why does the man want a higher floor?",["He wants a quieter room","He likes the view of the city","It is cheaper","He is afraid of noise from the pool"],0,"I'd like a quieter room."],["Where is breakfast served?",["On the second floor","On the twelfth floor","In his room","By the river"],0,"In the restaurant on the second floor."],["What does the man ask the receptionist to do?",["Book a taxi to the airport","Change his reservation","Clean his room","Bring breakfast to his room"],0,"Book a taxi to the airport for Friday."]]},
+{t:"Sự cố máy tính ở văn phòng",ic:"💻",lines:[["f","Hi, this is the help desk. You reported a problem with your computer?"],["m","Yes. Since this morning, I can't open any files on the shared drive. It says access denied."],["f","I see. Did you change your password recently?"],["m","Actually, yes. I changed it yesterday because the system asked me to."],["f","That's probably the reason. The shared drive is still using your old password. Please restart your computer and log in again."],["m","OK. And if that doesn't work?"],["f","Then call me back on extension 214, and I'll connect to your computer remotely."]],
+ qs:[["What is the man's problem?",["He cannot open files on the shared drive","His computer will not turn on","He forgot his password","His printer is broken"],0,"Can't open any files on the shared drive."],["What did the man do yesterday?",["He changed his password","He installed new software","He moved to a new desk","He called the help desk"],0,"I changed it yesterday."],["What does the woman tell him to do first?",["Restart and log in again","Buy a new computer","Send an email to his manager","Wait until tomorrow"],0,"Restart your computer and log in again."],["What will the woman do if the problem continues?",["Connect to his computer remotely","Visit his office","Give him a new laptop","Reset the whole network"],0,"I'll connect to your computer remotely."]]},
+{t:"Bàn về tiến độ công trường",ic:"🏗️",lines:[["m","How is the progress on the tower? Are we still on schedule?"],["f","Mostly. The structure is finished up to the eighteenth floor, but the glass panels for the facade have been delayed."],["m","How long is the delay?"],["f","The supplier says about three weeks. The shipment was held at the port for inspection."],["m","Three weeks could affect the handover date. Can we start the interior work on the lower floors in the meantime?"],["f","Yes, that's my plan. If we move the interior team forward, we can probably recover two of those weeks."],["m","Good. Please update the schedule and send it to the client by Wednesday."]],
+ qs:[["What has been delayed?",["The glass panels","The steel beams","The interior designers","The building permit"],0,"The glass panels for the facade have been delayed."],["Why was the shipment delayed?",["It was held for inspection","The factory closed","The ship broke down","It was sent to the wrong city"],0,"Held at the port for inspection."],["What does the woman plan to do?",["Start interior work on lower floors earlier","Find a new supplier","Stop work for three weeks","Add more floors"],0,"Move the interior team forward."],["What should the woman send to the client by Wednesday?",["An updated schedule","A new contract","Photos of the site","An invoice"],0,"Update the schedule and send it to the client by Wednesday."]]}
+];
+const WR=[
+{id:"toeic-email",t:"TOEIC Writing · Trả lời email khách hàng",ic:"✉️",min:10,words:[90,150],
+ task:"You are a customer service manager at an online furniture store. A customer, Ms. Garcia, wrote that her dining table arrived three days late and one chair was damaged. Write a reply. In your email, apologize, explain what you will do about the chair, and offer something to make up for the delay.",
+ tpl:"Dear Ms. Garcia,\n\nThank you for contacting us about ... I am very sorry that ...\n\n[Giải thích ngắn lý do / Nói rõ cách xử lý chiếc ghế: đổi mới, thời gian giao]\n\n[Bồi thường: mã giảm giá / hoàn phí giao hàng]\n\nPlease let me know if ... We value your business and ...\n\nSincerely,\n[Tên]\nCustomer Service Manager",
+ ph:["Thank you for contacting us about ...","I sincerely apologize for ...","This was caused by ...","We will send a replacement ... free of charge.","As a token of our apology, we would like to offer ...","Please do not hesitate to contact me if ...","We appreciate your patience and understanding."],
+ model:"Dear Ms. Garcia,\n\nThank you for contacting us about your recent order. I sincerely apologize that your dining table arrived three days late and that one of the chairs was damaged.\n\nThe delay was caused by a problem at our warehouse, which has now been solved. We will send a replacement chair free of charge, and it should reach you by Friday. Our delivery team will also collect the damaged chair at the same time, so you do not need to do anything.\n\nAs a token of our apology, we have refunded your delivery fee and added a 15% discount code to your account for your next purchase.\n\nPlease do not hesitate to contact me if you have any further questions. We appreciate your patience and understanding.\n\nSincerely,\nNam Tran\nCustomer Service Manager",
+ check:["Có lời chào và lời kết đúng kiểu thư công việc","Xin lỗi rõ ràng","Nói cách xử lý chiếc ghế hỏng","Đề nghị bồi thường cho việc giao trễ","Câu ngắn, rõ, không có lỗi chính tả"]},
+{id:"ielts-t1",t:"IELTS Writing Task 1 · Mô tả biểu đồ",ic:"📊",min:20,words:[150,200],chart:{title:"Visitors to three museums (thousands)",cats:["2015","2020","2025"],series:[["History",[120,80,150]],["Science",[90,110,170]],["Art",[60,50,70]]]},
+ task:"The chart shows the number of visitors to three museums in a city in 2015, 2020 and 2025. Summarise the information by selecting and reporting the main features, and make comparisons where relevant. Write at least 150 words.",
+ tpl:"[Mở bài: viết lại đề bằng từ của mình]\nThe bar chart compares ...\n\n[Tổng quan: 2 xu hướng chính, không đưa số]\nOverall, ... while ...\n\n[Thân 1: nhóm có xu hướng giống nhau, có số liệu]\nIn 2015, ... Five years later, ... However, by 2025 ...\n\n[Thân 2: nhóm còn lại, so sánh]\nBy contrast, ...",
+ ph:["The bar chart compares ...","Overall, it is clear that ...","... rose significantly from ... to ...","... fell slightly to ...","... remained relatively stable at around ...","By contrast, ...","... was the most popular, attracting ..."],
+ model:"The bar chart compares the number of people who visited three museums in a city in 2015, 2020 and 2025.\n\nOverall, the science museum showed the strongest growth and became the most visited museum by 2025, while the art museum remained the least popular throughout the period. All three museums saw higher numbers in 2025 than in 2015.\n\nIn 2015, the history museum was the most popular, with 120,000 visitors, compared with 90,000 for the science museum. Five years later, the number of visitors to the history museum dropped to 80,000, whereas the science museum continued to grow, reaching 110,000. By 2025, both had increased sharply, to 150,000 and 170,000 respectively, so the science museum overtook the history museum.\n\nBy contrast, the art museum attracted far fewer people. Its visitor numbers fell slightly from 60,000 to 50,000 between 2015 and 2020, before recovering to 70,000 in 2025, which was still less than half the figure for the science museum.",
+ check:["Có câu mở bài viết lại đề, không chép nguyên văn","Có đoạn tổng quan nêu xu hướng chính","Có số liệu cụ thể và so sánh","Dùng đa dạng từ: rise, fall, remain, overtake","Đủ 150 từ trở lên, không nêu ý kiến cá nhân"]},
+{id:"ielts-t2",t:"IELTS Writing Task 2 · Bài luận nêu quan điểm",ic:"📝",min:40,words:[250,320],
+ task:"Some people believe that working from home is better for both employees and companies. Others think that it creates more problems than benefits. Discuss both views and give your own opinion. Write at least 250 words.",
+ tpl:"[Mở bài: giới thiệu chủ đề + quan điểm của bạn]\nIn recent years, ... While some argue that ..., others believe ... In my view, ...\n\n[Thân 1: quan điểm thứ nhất + lý do + ví dụ]\nOn the one hand, ... This is because ... For example, ...\n\n[Thân 2: quan điểm thứ hai + lý do + ví dụ]\nOn the other hand, ... Furthermore, ...\n\n[Kết bài: tóm tắt + nhắc lại quan điểm]\nIn conclusion, ...",
+ ph:["In recent years, there has been a growing debate about ...","On the one hand, ... On the other hand, ...","This is mainly because ...","For instance, ...","Furthermore, / Moreover, ...","Nevertheless, ...","In conclusion, I believe that ..."],
+ model:"In recent years, more and more companies have allowed their staff to work from home. While some people argue that this arrangement benefits everyone, others believe it causes more problems than it solves. In my view, working from home is beneficial when it is combined with regular time in the office.\n\nOn the one hand, remote work offers clear advantages. Employees save the time and money they would otherwise spend commuting, which can be more than two hours a day in large cities such as Hanoi. This often leads to lower stress and higher productivity. Companies also benefit, because they can reduce the cost of office space and recruit talented people who live far away.\n\nOn the other hand, working from home can create serious difficulties. Communication becomes slower when colleagues cannot simply walk over to ask a question, and new employees may find it hard to learn from more experienced staff. Furthermore, some people struggle to separate work from family life, which can result in longer working hours and feelings of isolation.\n\nIn my opinion, the best solution is a hybrid model. For example, a team might work at home on tasks that need concentration, such as writing reports or preparing drawings, and meet in the office two or three days a week for meetings, training and teamwork. This approach keeps most of the benefits of remote work while reducing its disadvantages.\n\nIn conclusion, although working from home has both advantages and drawbacks, I believe that a balanced combination of home and office work is the most effective option for both employees and employers.",
+ check:["Mở bài nêu rõ chủ đề và quan điểm","Mỗi đoạn thân có một ý chính, có lý do và ví dụ","Bàn cả hai quan điểm như đề yêu cầu","Dùng từ nối: On the one hand, Furthermore, Nevertheless","Kết bài nhắc lại quan điểm, đủ 250 từ"]}
+];
+let KN={mode:"gram",i:-1},KQ=null,knTimer=null,knT0=0;
+function knQs(arr){return arr.map(x=>{const m=toMix(x[1],x[2]);return{q:x[0],opts:m.opts,ans:m.ans,ex:x[3]}})}
+function playDialog(lines,btn){
+ if(!canSpeak)return;try{speechSynthesis.cancel()}catch(e){}clearTimeout(speakTimer);const run=++speakRun;let i=0;
+ if(btn){playingBtn=btn;btn.classList.add("playing")}
+ const next=()=>{if(run!==speakRun)return;if(i>=lines.length){if(btn)btn.classList.remove("playing");return}
+  const [g,t]=lines[i++],u=new SpeechSynthesisUtterance(t),v=g==="m"?VO.m:VO.f;if(v){u.voice=v;u.lang=v.lang}else u.lang="en-US";
+  u.rate=S.slow?.75:.92;u.pitch=g==="m"?(VO.mFake?.5:.7):(VO.fFake?1.35:1);
+  u.onend=()=>{speakTimer=setTimeout(next,380)};u.onerror=()=>{if(btn)btn.classList.remove("playing")};speechSynthesis.speak(u)};
+ next();
+}
+function knQuizHTML(){
+ const q=KQ.qs[KQ.i],n=KQ.qs.length,a=KQ.picked>=0;
+ if(KQ.i>=n)return'<div class="done-box"><div class="pic lg">'+pic(KQ.score/n>=.8?"🏆":"📘")+'</div><div class="score">'+KQ.score+"/"+n+"</div>"+(KQ.secs?'<p class="muted" style="margin:0">Thời gian: '+Math.floor(KQ.secs/60)+" phút "+(KQ.secs%60)+" giây</p>":"")+'<div class="row-c"><button class="btn pri" data-act="kn-again">Làm lại</button><button class="btn" data-act="kn-back">Chọn bài khác</button></div></div>';
+ return'<div class="q-top" style="margin-top:12px"><span>Câu '+(KQ.i+1)+"/"+n+"</span><span>Đúng "+KQ.score+'</span></div><div class="q-card" style="align-items:stretch;text-align:left"><div class="q-prompt" style="justify-content:flex-start;font-size:1.1rem">'+esc(q.q).replace("___",'<span style="border-bottom:2px solid var(--accent);padding:0 18px"></span>')+'</div></div><div class="opts">'+
+  q.opts.map((o,j)=>{let cl="opt";if(a){if(j===q.ans)cl+=" ok";else if(j===KQ.picked)cl+=" bad"}return'<button class="'+cl+'" data-act="kn-ans" data-j="'+j+'"'+(a?" disabled":"")+'><span class="k">'+"ABCD"[j]+"</span><span>"+esc(o)+"</span></button>"}).join("")+"</div>"+
+  (a?'<div class="reveal"><div class="wtxt"><span class="vi">'+esc(q.ex)+'</span></div></div><div class="q-next"><button class="btn pri" data-act="kn-next" id="knNext">'+(KQ.i+1<n?"Câu tiếp →":"Xem kết quả")+"</button></div>":"");
+}
+function knStartQuiz(src){KQ={qs:knQs(src),i:0,picked:-1,score:0,secs:0,src}}
+function knChart(c){
+ const W=520,H=230,pad=36,max=Math.max(...c.series.flatMap(s=>s[1]))*1.15,gw=(W-pad*2)/c.cats.length,bw=gw/(c.series.length+1),cols=["var(--a-gt)","var(--a-kt)","var(--a-ks)"];
+ let s='<svg viewBox="0 0 '+W+" "+H+'" style="width:100%;max-width:560px;height:auto" role="img" aria-label="'+esc(c.title)+'"><text x="'+W/2+'" y="16" text-anchor="middle" style="fill:var(--ink);font:600 13px var(--f-body)">'+esc(c.title)+"</text>";
+ for(let k=0;k<=4;k++){const v=Math.round(max/4*k/10)*10,y=H-pad-(H-pad*2)*(v/max);s+='<line x1="'+pad+'" x2="'+(W-pad)+'" y1="'+y+'" y2="'+y+'" style="stroke:var(--line)"/><text x="'+(pad-6)+'" y="'+(y+4)+'" text-anchor="end" style="fill:var(--muted);font:11px var(--f-body)">'+v+"</text>"}
+ c.cats.forEach((cat,ci)=>{c.series.forEach((se,si)=>{const v=se[1][ci],h=(H-pad*2)*(v/max),x=pad+gw*ci+bw*(si+.5),y=H-pad-h;s+='<rect x="'+x+'" y="'+y+'" width="'+(bw*.9)+'" height="'+h+'" rx="3" style="fill:'+cols[si]+'"/><text x="'+(x+bw*.45)+'" y="'+(y-4)+'" text-anchor="middle" style="fill:var(--ink);font:10px var(--f-body)">'+v+"</text>"});s+='<text x="'+(pad+gw*ci+gw/2)+'" y="'+(H-pad+16)+'" text-anchor="middle" style="fill:var(--ink);font:12px var(--f-body)">'+cat+"</text>"});
+ s+="</svg>"+'<div class="lv-lvls">'+c.series.map((se,si)=>'<span><b style="color:'+cols[si]+'">■</b> '+esc(se[0])+"</span>").join("")+"</div>";return s;
+}
+function knWordStats(t){
+ const words=(t.match(/[A-Za-z']+/g)||[]),sents=t.split(/[.!?]+\s/).filter(x=>x.trim().length>2);
+ const cnt={};words.forEach(w=>{const k=w.toLowerCase();if(k.length>4)cnt[k]=(cnt[k]||0)+1});
+ const rep=Object.entries(cnt).filter(e=>e[1]>=4).sort((a,b)=>b[1]-a[1]).slice(0,5).map(e=>e[0]+" ("+e[1]+")");
+ const links=(t.match(/\b(however|therefore|moreover|furthermore|in addition|although|while|whereas|by contrast|in conclusion|for example|for instance|on the other hand|as a result|overall|nevertheless)\b/gi)||[]).length;
+ const lowStart=(t.match(/[.!?]\s+[a-z]/g)||[]).length,iLow=(t.match(/\bi\b/g)||[]).length;
+ return{w:words.length,s:sents.length,avg:sents.length?Math.round(words.length/sents.length):0,rep,links,lowStart,iLow};
+}
+function knWriteFeedback(w){
+ const t=S.wr[w.id]||"",st=knWordStats(t),tips=[];
+ if(st.w<w.words[0])tips.push("Bài mới có "+st.w+" từ, cần ít nhất "+w.words[0]+" từ.");
+ else if(st.w>w.words[1]*1.3)tips.push("Bài hơi dài ("+st.w+" từ). Gọn lại cho đúng ý chính.");
+ if(st.avg>28)tips.push("Câu trung bình "+st.avg+" từ, hơi dài. Tách bớt câu cho rõ.");
+ if(st.avg&&st.avg<9)tips.push("Câu trung bình chỉ "+st.avg+" từ. Thử nối câu bằng because, although, which.");
+ if(st.links<3)tips.push("Mới có "+st.links+" từ nối. Thêm However, Furthermore, For example, In conclusion…");
+ if(st.rep.length)tips.push("Từ lặp nhiều: "+st.rep.join(", ")+". Thử dùng từ đồng nghĩa.");
+ if(st.lowStart)tips.push(st.lowStart+" chỗ sau dấu chấm chưa viết hoa.");
+ if(st.iLow)tips.push('Chữ "i" đứng riêng cần viết hoa thành "I" ('+st.iLow+" chỗ).");
+ if(!tips.length)tips.push("Độ dài, từ nối và câu đều ổn. Hãy so với bài mẫu và tự chấm theo danh sách bên dưới.");
+ return'<div class="tr-note" style="margin-top:0"><b>Nhận xét nhanh</b> (máy đếm, không thay giáo viên): '+st.w+" từ · "+st.s+" câu · "+st.links+" từ nối<ul style=\"margin:6px 0 0;padding-left:18px\">"+tips.map(x=>"<li>"+esc(x)+"</li>").join("")+"</ul></div>";
+}
+function renderKN(){
+ const box=$("#v-ky-nang");clearInterval(knTimer);
+ let h='<div class="tn-top"><div><p class="eyebrow" style="margin:0">Kỹ năng thi IELTS · TOEIC</p><h2 style="font-size:1.25rem">Phần còn thiếu so với bài thi</h2></div><div class="mini-seg" role="group" aria-label="Kỹ năng">'+
+  [["gram","Ngữ pháp"],["read","Đọc hiểu"],["listen","Nghe hội thoại"],["write","Viết"]].map(m=>'<button data-act="kn-mode" data-m="'+m[0]+'" aria-pressed="'+(KN.mode===m[0])+'">'+m[1]+"</button>").join("")+"</div></div>";
+ const list=KN.mode==="gram"?GL:KN.mode==="read"?RD:KN.mode==="listen"?DL:WR;
+ if(KN.i<0){
+  const intro={gram:"10 bài ngữ pháp trọng tâm của IELTS và TOEIC: công thức, ví dụ có dịch và bài tập kèm giải thích.",read:"Bài đọc dài kiểu TOEIC Part 7 và IELTS Reading. Có đồng hồ bấm giờ theo thời gian khuyến nghị.",listen:"Hội thoại hai người với giọng nam và nữ, đúng dạng TOEIC Part 3. Nghe trước, xem lời thoại sau.",write:"Đề viết email TOEIC, IELTS Task 1 và Task 2: dàn ý, mẫu câu, bài mẫu, ô viết có đếm từ, bấm giờ và nhận xét nhanh."}[KN.mode];
+  h+='<p class="muted" style="margin:12px 0">'+intro+'</p><div class="apps">'+list.map((x,i)=>'<button class="app" style="cursor:pointer;text-align:left;font:inherit" data-act="kn-open" data-i="'+i+'"><div class="pic">'+pic(x.ic)+"</div><div><b>"+esc(x.t)+"</b><span>"+(KN.mode==="gram"?x.q.length+" bài tập":KN.mode==="read"?x.qs.length+" câu hỏi · "+x.min+" phút":KN.mode==="listen"?x.lines.length+" lượt lời · "+x.qs.length+" câu hỏi":x.min+" phút · "+x.words[0]+"+ từ")+"</span></div></button>").join("")+"</div>";
+  box.innerHTML=h;return;
+ }
+ const x=list[KN.i];h+='<div class="row-c" style="justify-content:flex-start;margin:12px 0"><button class="btn" data-act="kn-back">← Danh sách</button></div>';
+ if(KN.mode==="gram"){
+  h+='<div class="kn-card"><h3>'+x.ic+" "+esc(x.t)+'</h3><p style="margin:0">'+esc(x.sum)+'</p><div class="kn-formula">'+esc(x.f)+'</div><ul class="kn-ex">'+x.ex.map(e=>"<li>"+esc(e[0])+(canSpeak?" "+spkBtn(e[0]):"")+"<span>"+esc(e[1])+"</span></li>").join("")+"</ul></div>";
+  if(!KQ)knStartQuiz(x.q);h+='<h3 class="grp">Bài tập</h3>'+knQuizHTML();
+ }else if(KN.mode==="read"){
+  h+='<div class="toolbar"><span class="to-time" id="knTime">⏱ '+x.min+':00</span><span class="muted" style="font-size:.82rem">Thời gian khuyến nghị '+x.min+' phút</span></div><div class="kn-pass" style="margin-top:10px">'+esc(x.text)+"</div>";
+  if(!KQ){knStartQuiz(x.qs);knT0=Date.now()}h+='<h3 class="grp">Câu hỏi</h3>'+knQuizHTML();
+ }else if(KN.mode==="listen"){
+  h+='<div class="kn-card"><h3>'+x.ic+" "+esc(x.t)+'</h3><div class="row-c" style="justify-content:flex-start"><button class="btn pri big" data-act="kn-play">🔊 Nghe hội thoại</button><button class="tgl" data-act="kn-script" aria-pressed="'+!!KN.script+'"><i></i>Hiện lời thoại</button></div><p class="muted" style="margin:0;font-size:.82rem">Giọng 👨 và 👩 đọc lần lượt. Nên nghe 1–2 lần rồi mới trả lời, sau đó bật lời thoại để kiểm tra.</p>'+
+   (KN.script?"<div>"+x.lines.map(l=>'<div class="kn-line"><span class="who">'+(l[0]==="m"?"👨 Nam":"👩 Nữ")+"</span><span>"+esc(l[1])+"</span></div>").join("")+"</div>":"")+"</div>";
+  if(!KQ)knStartQuiz(x.qs);h+='<h3 class="grp">Câu hỏi</h3>'+knQuizHTML();
+ }else{
+  const txt=S.wr[x.id]||"";
+  h+='<div class="kn-card"><h3>'+x.ic+" "+esc(x.t)+'</h3><div class="kn-pass" style="padding:12px">'+esc(x.task)+"</div>"+(x.chart?knChart(x.chart):"")+
+   '<details><summary class="link" style="padding:4px 0">Dàn ý gợi ý</summary><div class="kn-formula" style="font-family:var(--f-body);font-weight:400">'+esc(x.tpl)+"</div></details>"+
+   '<details><summary class="link" style="padding:4px 0">Mẫu câu hữu ích</summary><ul class="kn-ex">'+x.ph.map(p=>"<li>"+esc(p)+"</li>").join("")+"</ul></details></div>"+
+   '<div class="toolbar" style="margin-top:12px"><button class="btn" data-act="kn-timer">⏱ Bấm giờ '+x.min+' phút</button><span class="to-time" id="knTime"></span><span class="count" id="knWc" style="margin:0">'+knWordStats(txt).w+" từ</span></div>"+
+   '<textarea class="kn-write" id="knWrite" data-id="'+x.id+'" placeholder="Viết bài của bạn ở đây. Bài được tự lưu trên máy này.">'+esc(txt)+"</textarea>"+
+   '<div class="row-c" style="justify-content:flex-start;margin-top:8px"><button class="btn pri" data-act="kn-check">Nhận xét nhanh</button><button class="btn" data-act="kn-ai">'+I.copy+'Chép câu lệnh nhờ AI chữa</button><button class="btn" data-act="kn-model" aria-pressed="'+!!KN.model+'">'+(KN.model?"Ẩn bài mẫu":"Xem bài mẫu")+'</button></div><div id="knFb" style="margin-top:10px"></div>'+
+   (KN.model?'<h3 class="grp">Bài mẫu</h3><div class="kn-pass">'+esc(x.model)+"</div>":"")+
+   '<h3 class="grp">Tự chấm</h3><div class="kn-check">'+x.check.map((c,i)=>'<label><input type="checkbox" id="knc'+i+'"> '+esc(c)+"</label>").join("")+"</div>";
+ }
+ box.innerHTML=h;
+ if(KN.mode==="read"&&KQ&&KQ.i<KQ.qs.length){const end=knT0+x.min*60000;const tick=()=>{const el=$("#knTime");if(!el)return clearInterval(knTimer);const left=end-Date.now(),s=Math.abs(Math.floor(left/1000));el.textContent=(left<0?"⏱ Quá giờ ":"⏱ ")+Math.floor(s/60)+":"+String(s%60).padStart(2,"0");el.classList.toggle("warn",left<60000)};tick();knTimer=setInterval(tick,1000)}
+ const b=$("#knNext");if(b)b.focus({preventScroll:true});
+}
+
 /* ========== SỰ KIỆN ========== */
 document.addEventListener("click",e=>{
  const b=e.target.closest("[data-act]");if(!b)return;
@@ -1273,6 +1636,27 @@ document.addEventListener("click",e=>{
  if(act==="hc-clear"){HC.log=[];renderHCLog();return}
  if(act==="hc-copy"){if(!HC.log.length){toast("Chưa có hội thoại để chép");return}copyText(HC.log.map(m=>(m.from==="vi"?"Bạn: ":"Người kia: ")+m.text+"\n→ "+(m.tr||"")).join("\n\n"),"Đã chép hội thoại");return}
  if(act==="speak-vi"){speakVi(b.dataset.t);return}
+ if(act==="kn-mode"){KN={mode:b.dataset.m,i:-1};KQ=null;renderKN();return}
+ if(act==="kn-open"){KN.i=+b.dataset.i;KN.script=false;KN.model=false;KQ=null;renderKN();window.scrollTo(0,0);return}
+ if(act==="kn-back"){KN.i=-1;KQ=null;renderKN();return}
+ if(act==="kn-ans"){if(!KQ||KQ.picked>=0)return;const q=KQ.qs[KQ.i];KQ.picked=+b.dataset.j;if(KQ.picked===q.ans)KQ.score++;renderKN();return}
+ if(act==="kn-next"){KQ.i++;KQ.picked=-1;if(KQ.i>=KQ.qs.length&&KN.mode==="read")KQ.secs=Math.round((Date.now()-knT0)/1000);renderKN();return}
+ if(act==="kn-again"){KQ=null;renderKN();return}
+ if(act==="kn-play"){playDialog(DL[KN.i].lines,b);return}
+ if(act==="kn-script"){KN.script=!KN.script;renderKN();return}
+ if(act==="kn-model"){KN.model=!KN.model;renderKN();return}
+ if(act==="kn-check"){$("#knFb").innerHTML=knWriteFeedback(WR[KN.i]);return}
+ if(act==="kn-timer"){const w=WR[KN.i];KN.wEnd=Date.now()+w.min*60000;clearInterval(KN.wt);KN.wt=setInterval(()=>{const el=$("#knTime");if(!el)return;const left=KN.wEnd-Date.now(),s=Math.abs(Math.floor(left/1000));el.textContent=(left<0?"⏱ Hết giờ, quá ":"⏱ Còn ")+Math.floor(s/60)+":"+String(s%60).padStart(2,"0");el.classList.toggle("warn",left<120000)},1000);toast("Bắt đầu bấm giờ "+w.min+" phút");return}
+ if(act==="kn-ai"){const w=WR[KN.i],t=(S.wr[w.id]||"").trim();if(!t){toast("Hãy viết bài trước");return}copyText("Bạn là giám khảo "+(w.id.startsWith("ielts")?"IELTS":"TOEIC")+". Hãy chấm bài viết dưới đây"+(w.id.startsWith("ielts")?" theo 4 tiêu chí IELTS (Task Achievement/Response, Coherence and Cohesion, Lexical Resource, Grammatical Range and Accuracy), cho band ước lượng":"")+", chỉ ra lỗi ngữ pháp và từ vựng kèm cách sửa, rồi viết lại một bản tốt hơn. Giải thích bằng tiếng Việt.\n\nĐề bài:\n"+w.task+"\n\nBài viết:\n"+t,"Đã chép câu lệnh. Dán vào ChatGPT, Claude hoặc gửi giáo viên.");return}
+ if(act==="to-mode"){TO.mode=b.dataset.m;if(!(TQ&&TQ.exam&&!TQ.res)){TQ=null;clearInterval(toTimer)}renderTO();return}
+ if(act==="to-topic"){TO.topic=+b.dataset.i;renderTO();return}
+ if(act==="to-start"){toStart(b.dataset.k);renderTO();toSayCur();window.scrollTo(0,0);return}
+ if(act==="to-play"){speak(b.dataset.t,S.g,b);return}
+ if(act==="to-ans"){if(!TQ||TQ.picked>=0)return;const q=TQ.qs[TQ.i];TQ.picked=+b.dataset.j;q.ok=TQ.picked===q.ans;if(q.ok)TQ.score++;renderTO();return}
+ if(act==="to-next"){TQ.i++;TQ.picked=-1;if(TQ.i>=TQ.qs.length&&TQ.exam){toFinish();return}renderTO();toSayCur();return}
+ if(act==="to-submit"){toFinish();return}
+ if(act==="to-quit"){clearInterval(toTimer);TQ=null;renderTO();return}
+ if(act==="to-known"){const id=b.dataset.id;if(S.known.has(id))S.known.delete(id);else S.known.add(id);save();renderTO();return}
  if(act==="lv-stage"){lvStage=b.dataset.s;renderLV();return}
  if(act==="lv-start"){LV=null;lvMake();renderLV();lvSayCur();window.scrollTo(0,0);return}
  if(act==="lv-play"){speak(b.dataset.t,S.g,b);return}
@@ -1316,6 +1700,7 @@ document.addEventListener("input",e=>{
  if(e.target.id==="qWord"){S.q=e.target.value;renderWordList()}
  if(e.target.id==="qSent"){S.q=e.target.value;renderSentList()}
  if(e.target.id==="trIn"){S.trText=e.target.value;renderTrSide()}
+ if(e.target.id==="knWrite"){S.wr[e.target.dataset.id]=e.target.value;const c=$("#knWc");if(c)c.textContent=knWordStats(e.target.value).w+" từ";clearTimeout(KN.sv);KN.sv=setTimeout(save,600)}
  if(e.target.id==="tnQ"){S.tnQ=e.target.value;S.tnN=60;renderTNList()}
 });
 document.addEventListener("keydown",e=>{if(e.target.id==="trIn"&&e.key==="Enter"&&(e.ctrlKey||e.metaKey)){e.preventDefault();trGo()}if(e.target.id==="hcIn"&&e.key==="Enter"){e.preventDefault();hcSend()}});

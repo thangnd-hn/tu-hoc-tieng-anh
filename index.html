@@ -281,6 +281,14 @@ kbd{font:600 .72rem var(--f-body);border:1px solid var(--line);border-bottom-wid
 .toast{position:fixed;left:50%;transform:translateX(-50%);bottom:calc(18px + env(safe-area-inset-bottom,0px));z-index:20;background:var(--ink);color:var(--bg);padding:10px 16px;border-radius:12px;font-size:.875rem;max-width:min(560px,calc(100vw - 32px));box-shadow:0 8px 24px rgba(0,0,0,.25)}
 .overlay{position:fixed;inset:0;z-index:30;background:rgba(8,12,18,.5);display:grid;place-items:center;padding:16px}
 .panel{background:var(--surface);border-radius:16px;padding:18px;width:min(560px,100%);display:flex;flex-direction:column;gap:10px}
+.lv-badge{display:inline-grid;place-items:center;min-width:72px;height:72px;padding:0 10px;border-radius:18px;background:var(--accent);color:var(--on-accent);font:700 1.8rem var(--f-display);flex:none}
+.lv-badge.sm{min-width:44px;height:36px;border-radius:10px;font-size:1rem}
+.lv-row{display:grid;grid-template-columns:120px 1fr 44px;gap:10px;align-items:center;font-size:.88rem}
+.lv-row b{font-variant-numeric:tabular-nums;text-align:right}
+.bar{height:10px;background:var(--sunk);border-radius:5px;overflow:hidden}
+.bar i{display:block;height:100%;background:var(--accent);border-radius:5px}
+.lv-lvls{display:flex;flex-wrap:wrap;gap:6px}
+.lv-lvls span{background:var(--sunk);border-radius:8px;padding:4px 10px;font-size:.8rem;font-variant-numeric:tabular-nums}
 .prof-chip{margin-top:8px;display:inline-flex;gap:8px;align-items:center;border:1px solid var(--line);background:var(--surface);color:var(--ink);border-radius:999px;padding:4px 12px 4px 4px;font:600 .82rem var(--f-body);cursor:pointer;max-width:100%}
 .prof-chip:hover{border-color:var(--accent-line)}
 .av{width:26px;height:26px;flex:none;border-radius:50%;background:var(--accent);color:var(--on-accent);display:grid;place-items:center;font:700 .78rem var(--f-display)}
@@ -323,6 +331,7 @@ kbd{font:600 .72rem var(--f-body);border:1px solid var(--line);border-bottom-wid
 <nav class="tabs" aria-label="Mục chính"><div class="wrap tabs-in" id="tabs"></div></nav>
 <main class="wrap main">
   <section id="v-lo-trinh" class="view"></section>
+  <section id="v-trinh-do" class="view" hidden></section>
   <section id="v-tu-vung" class="view" hidden></section>
   <section id="v-mau-cau" class="view" hidden></section>
   <section id="v-the-nho" class="view" hidden></section>
@@ -593,7 +602,7 @@ const APPS=[
 
 /* ========== TRẠNG THÁI ========== */
 const NG=["gt","kt","ks","it"];
-const TABS=[["lo-trinh","Lộ trình"],["tu-vung","Từ vựng"],["mau-cau","Mẫu câu"],["the-nho","Thẻ nhớ"],["kiem-tra","Kiểm tra"],["thanh-ngu","Thành ngữ"],["dich","Dịch"],["hoi-thoai","Hội thoại"]];
+const TABS=[["lo-trinh","Lộ trình"],["trinh-do","Trình độ"],["tu-vung","Từ vựng"],["mau-cau","Mẫu câu"],["the-nho","Thẻ nhớ"],["kiem-tra","Kiểm tra"],["thanh-ngu","Thành ngữ"],["dich","Dịch"],["hoi-thoai","Hội thoại"]];
 /* ========== HỒ SƠ NGƯỜI HỌC (tên, tuổi) ==========
    Lưu trong trình duyệt của máy này, không gửi đi đâu. Mỗi người có tiến độ riêng.
    Người đầu tiên tạo hồ sơ nhận luôn tiến độ đã lưu từ trước (khóa cũ "tieng-anh-nghe-v1"). */
@@ -608,8 +617,8 @@ let saved={};
 try{saved=JSON.parse(localStorage.getItem(KEY))||{}}catch(e){}
 const S={tab:"lo-trinh",nganh:DATA[saved.nganh]?saved.nganh:"kt",planNg:DATA[saved.planNg]?saved.planNg:"kt",topic:-1,q:"",
  known:new Set(saved.known||[]),done:new Set(saved.done||[]),slow:!!saved.slow,onlyNew:false,dir:"en",g:saved.g==="m"?"m":"f",trText:"",trDir:"auto",
- tnL:["vi","sl"].includes(saved.tnL)?saved.tnL:"en",tnTag:"",tnQ:"",tnFav:new Set(saved.tnFav||[]),tnOnlyFav:false,tnMode:"list",tnN:60};
-function save(){try{localStorage.setItem(KEY,JSON.stringify({nganh:S.nganh,planNg:S.planNg,known:[...S.known],done:[...S.done],slow:S.slow,g:S.g,tnL:S.tnL,tnFav:[...S.tnFav]}))}catch(e){}}
+ tnL:["vi","sl"].includes(saved.tnL)?saved.tnL:"en",tnTag:"",tnQ:"",tnFav:new Set(saved.tnFav||[]),tnOnlyFav:false,tnMode:"list",tnN:60,tests:Array.isArray(saved.tests)?saved.tests:[]};
+function save(){try{localStorage.setItem(KEY,JSON.stringify({nganh:S.nganh,planNg:S.planNg,known:[...S.known],done:[...S.done],slow:S.slow,g:S.g,tnL:S.tnL,tnFav:[...S.tnFav],tests:S.tests}))}catch(e){}}
 let FC=null, QZ=null;
 
 /* ========== TIỆN ÍCH ========== */
@@ -698,7 +707,7 @@ function chips(kind){
 function render(){
  renderSeg();renderTabs();
  TABS.forEach(t=>{$("#v-"+t[0]).hidden=t[0]!==S.tab});
- ({"lo-trinh":renderPlan,"tu-vung":renderWords,"mau-cau":renderSents,"the-nho":renderFC,"kiem-tra":renderQZ,"dich":renderTr,"thanh-ngu":renderTN,"hoi-thoai":renderHC})[S.tab]();
+ ({"lo-trinh":renderPlan,"tu-vung":renderWords,"mau-cau":renderSents,"the-nho":renderFC,"kiem-tra":renderQZ,"dich":renderTr,"thanh-ngu":renderTN,"hoi-thoai":renderHC,"trinh-do":renderLV})[S.tab]();
 }
 
 /* ========== LỘ TRÌNH ========== */
@@ -1126,6 +1135,129 @@ function renderTNQuiz(){
  if(a){const b=$("#tnNext");if(b)b.focus({preventScroll:true})}
 }
 
+/* ========== KIỂM TRA TRÌNH ĐỘ (đầu vào, giữa lộ trình, cuối lộ trình) ==========
+   25 câu: 15 ngữ pháp từ A1 đến C1 (mỗi bậc 3 câu, câu khó điểm cao hơn),
+   5 từ vựng theo ngành đang chọn, 5 nghe hiểu (đọc to câu tiếng Anh, chọn nghĩa).
+   Kết quả lưu theo từng người học để so sánh tiến bộ qua các giai đoạn. */
+const LVN=["A1","A2","B1","B2","C1"];
+const LVNAME={A1:"Mới bắt đầu",A2:"Sơ cấp",B1:"Trung cấp",B2:"Trung cao cấp",C1:"Cao cấp"};
+const LVADV={
+ A1:"Bắt đầu từ Tháng 1 (Nền tảng). Học chắc phát âm, câu chào hỏi và công sở hằng ngày, mỗi ngày 10 từ mới bằng Thẻ nhớ.",
+ A2:"Học nhanh Tháng 1, dành nhiều thời gian cho Tháng 2 (Vào nghề): từ vựng ngành và mẫu câu email.",
+ B1:"Có thể bắt đầu từ Tháng 2. Tập trung đọc tài liệu ngành, viết email thật và luyện nghe mẫu câu.",
+ B2:"Bắt đầu từ Tháng 3 (Phản xạ). Luyện nói theo tình huống ở tab Hội thoại và học thêm thành ngữ.",
+ C1:"Trình độ tốt. Dùng thư viện thành ngữ, tiếng lóng và tab Hội thoại để nói tự nhiên như người bản xứ."};
+const STAGES=[["dau","Đầu vào","trước khi bắt đầu học"],["giua","Giữa lộ trình","sau khoảng tuần 6"],["cuoi","Cuối lộ trình","sau tuần 12"]];
+/* [câu hỏi, [đáp án], chỉ số đáp án đúng, giải thích] */
+const GRAM={
+A1:[["She ___ a teacher.",["is","are","am","be"],0,"Chủ ngữ số ít (she) dùng is."],
+ ["I ___ coffee every morning.",["drink","drinks","drinking","am drink"],0,"Hiện tại đơn, chủ ngữ I dùng động từ nguyên mẫu."],
+ ["There ___ two chairs in the room.",["are","is","be","am"],0,"Danh từ số nhiều (two chairs) đi với there are."],
+ ["___ you speak English?",["Do","Does","Are","Is"],0,"Câu hỏi hiện tại đơn với you dùng Do."],
+ ["This is ___ apple.",["an","a","the","some"],0,"Trước từ bắt đầu bằng nguyên âm dùng an."],
+ ["My brother ___ in Hanoi.",["lives","live","living","is live"],0,"Chủ ngữ ngôi ba số ít thêm -s."],
+ ["We ___ at home yesterday.",["were","was","are","be"],0,"Quá khứ của be với we là were."],
+ ["I have two ___.",["children","childs","child","childrens"],0,"Số nhiều bất quy tắc của child là children."],
+ ["He ___ like coffee.",["doesn't","don't","isn't","not"],0,"Phủ định hiện tại đơn với he dùng doesn't."],
+ ["Where ___ your office?",["is","are","do","does"],0,"Your office là số ít nên dùng is."]],
+A2:[["I ___ to Da Nang last year.",["went","go","have gone","was go"],0,"Last year là thời điểm trong quá khứ, dùng quá khứ đơn."],
+ ["She is ___ than her sister.",["taller","more tall","tallest","the taller"],0,"So sánh hơn của tính từ ngắn thêm -er."],
+ ["We ___ dinner when the phone rang.",["were having","had","have","are having"],0,"Hành động đang diễn ra thì có hành động khác xen vào: quá khứ tiếp diễn."],
+ ["How ___ water do you drink a day?",["much","many","long","often"],0,"Water không đếm được nên dùng much."],
+ ["You ___ wear a helmet on site.",["must","can","may","would"],0,"Must diễn tả sự bắt buộc."],
+ ["Have you ever ___ to Japan?",["been","went","go","gone to"],0,"Have been to: đã từng đến."],
+ ["This is the ___ hotel in the city.",["best","better","most good","goodest"],0,"So sánh nhất của good là the best."],
+ ["I usually go to work ___ bus.",["by","on","in","with"],0,"Đi bằng phương tiện: by bus."],
+ ["I'm going ___ visit my parents this weekend.",["to","for","at","on"],0,"Be going to + động từ nguyên mẫu."],
+ ["There isn't ___ milk in the fridge.",["any","some","many","a"],0,"Câu phủ định dùng any."]],
+B1:[["If it rains tomorrow, we ___ the meeting.",["will postpone","would postpone","postponed","postpone"],0,"Câu điều kiện loại 1: If + hiện tại, will + động từ."],
+ ["I have worked here ___ 2019.",["since","for","from","during"],0,"Since + mốc thời gian."],
+ ["The report ___ by the manager yesterday.",["was approved","approved","is approving","has approve"],0,"Bị động quá khứ: was + phân từ hai."],
+ ["She asked me where I ___.",["lived","live","do live","did live"],0,"Câu gián tiếp lùi thì, không đảo trợ động từ."],
+ ["I'm not used to ___ up so early.",["getting","get","got","have got"],0,"Be used to + V-ing: quen với việc."],
+ ["The man ___ designed this building is famous.",["who","which","whose","whom"],0,"Đại từ quan hệ chỉ người làm chủ ngữ: who."],
+ ["You ___ have told me earlier!",["should","must","can","would to"],0,"Should have + phân từ hai: lẽ ra nên làm."],
+ ["By the time we arrived, the meeting ___.",["had started","started","has started","starts"],0,"Hành động xảy ra trước một hành động quá khứ khác: quá khứ hoàn thành."],
+ ["He suggested ___ a break.",["taking","to take","take","took"],0,"Suggest + V-ing."],
+ ["Neither the contractor ___ the consultant agreed.",["nor","or","and","but"],0,"Neither ... nor."]],
+B2:[["If I ___ more time, I would learn another language.",["had","have","would have","will have"],0,"Câu điều kiện loại 2: If + quá khứ đơn."],
+ ["The project ___ by the end of next month.",["will have been completed","will complete","is completing","has completed"],0,"Bị động tương lai hoàn thành: hoàn tất trước một mốc tương lai."],
+ ["Hardly ___ the presentation when the power went out.",["had he started","he had started","did he start","he started"],0,"Hardly đứng đầu câu thì đảo ngữ: Hardly had + S + phân từ hai."],
+ ["I wish I ___ that email yesterday.",["hadn't sent","didn't send","haven't sent","wouldn't send"],0,"Ước về quá khứ: wish + quá khứ hoàn thành."],
+ ["Despite ___ late, she finished the report on time.",["starting","she started","to start","start"],0,"Despite + V-ing hoặc danh từ."],
+ ["It's high time we ___ a decision.",["made","make","will make","have made"],0,"It's high time + quá khứ đơn."],
+ ["The client insisted that the design ___ changed.",["be","is","was","will be"],0,"Insist that + động từ nguyên mẫu (giả định cách)."],
+ ["Not only ___ late, but he also forgot the documents.",["was he","he was","did he","he did"],0,"Not only đứng đầu câu thì đảo ngữ."],
+ ["The drawings need ___ before submission.",["checking","check","to checking","checked"],0,"Need + V-ing mang nghĩa bị động: cần được kiểm tra."],
+ ["She denied ___ the files.",["deleting","to delete","delete","deleted"],0,"Deny + V-ing."]],
+C1:[["Had I known about the delay, I ___ the client.",["would have informed","would inform","had informed","will inform"],0,"Đảo ngữ câu điều kiện loại 3: Had + S + phân từ hai, would have + phân từ hai."],
+ ["The proposal was rejected, ___ came as a surprise to everyone.",["which","that","what","it"],0,"Which thay cho cả mệnh đề phía trước."],
+ ["Under no circumstances ___ the site without a helmet.",["should you enter","you should enter","you enter","entering"],0,"Under no circumstances đứng đầu câu thì đảo ngữ."],
+ ["She is said ___ the design competition last year.",["to have won","to win","winning","that she won"],0,"Be said to have + phân từ hai: được cho là đã làm."],
+ ["Little ___ that the project would take ten years.",["did they know","they knew","they did know","knew they"],0,"Little đứng đầu câu thì đảo ngữ với trợ động từ."],
+ ["Were the contractor ___ on time, a bonus would be paid.",["to finish","finishing","finish","finished"],0,"Đảo ngữ câu điều kiện: Were + S + to V."],
+ ["The more you practise, ___ you become.",["the more fluent","more fluent","the most fluent","most fluent"],0,"Cấu trúc the + so sánh hơn ..., the + so sánh hơn."],
+ ["It is essential that every worker ___ the safety rules.",["follow","follows","followed","will follow"],0,"It is essential that + động từ nguyên mẫu (giả định cách)."],
+ ["The meeting, ___ purpose was unclear, lasted two hours.",["whose","which","that","whom"],0,"Whose chỉ sở hữu."],
+ ["No sooner had we signed the contract ___ the prices went up.",["than","when","then","that"],0,"No sooner ... than."]]
+};
+let LV=null,lvStage=null;
+function lvStageGuess(){const ng=S.planNg;let n=0,d=0;plan(ng).forEach(wk=>tasks(wk,ng).forEach((t,j)=>{n++;if(S.done.has(tkey(ng,wk.w,j)))d++}));const r=n?d/n:0;return r<.1?"dau":r<.7?"giua":"cuoi"}
+function lvMake(){
+ const qs=[];
+ LVN.forEach((lv,li)=>shuffle(GRAM[lv]).slice(0,3).forEach(g=>{const so=shuffle(g[1].map((x,i)=>({x,ok:i===g[2]})));qs.push({sec:"g",lv,w:li+1,q:g[0],opts:so.map(z=>z.x),ans:so.findIndex(z=>z.ok),ex:g[3]})}));
+ const ng=S.nganh,W=words(ng,-1),SS=sents(ng,-1);
+ shuffle(W).slice(0,5).forEach(w=>{const so=shuffle([w,...shuffle(W.filter(x=>x.vi!==w.vi)).slice(0,3)]);qs.push({sec:"v",w:2,q:w.en,pic:w.pic,opts:so.map(x=>x.vi),ans:so.indexOf(w),ex:w.en+" = "+w.vi})});
+ shuffle(SS).slice(0,5).forEach(s=>{const so=shuffle([s,...shuffle(SS.filter(x=>x.en!==s.en)).slice(0,3)]);qs.push({sec:canSpeak?"l":"r",w:2,q:s.en,opts:so.map(x=>x.vi),ans:so.indexOf(s),ex:s.en+" = "+s.vi})});
+ LV={qs,i:0,picked:-1,stage:lvStage||lvStageGuess(),ng,res:null};
+}
+function lvResult(){
+ let pts=0,max=0;const sec={g:[0,0],v:[0,0],l:[0,0]},byLv={};LVN.forEach(l=>byLv[l]=[0,0]);
+ LV.qs.forEach(q=>{max+=q.w;const k=q.sec==="r"?"l":q.sec;sec[k][1]++;if(q.ok){pts+=q.w;sec[k][0]++}if(q.lv){byLv[q.lv][1]++;if(q.ok)byLv[q.lv][0]++}});
+ const pct=pts/max;let li=pct<.25?0:pct<.42?1:pct<.6?2:pct<.78?3:4;
+ if(li>=4&&byLv.C1[0]===0)li=3;if(li>=3&&byLv.B2[0]===0)li=2;
+ return{pct:Math.round(pct*100),level:LVN[li],sec,byLv};
+}
+const stageName=s=>(STAGES.find(x=>x[0]===s)||STAGES[0])[1];
+function lvHistory(){
+ if(!S.tests.length)return'<p class="muted" style="font-size:.85rem">Chưa có bài test nào. Làm bài đầu vào để biết nên bắt đầu từ đâu.</p>';
+ return'<div class="slist">'+S.tests.slice().reverse().map(t=>'<div class="srow"><span class="lv-badge sm">'+t.level+'</span><div class="stxt"><div class="en">'+stageName(t.stage)+" · "+t.pct+'%</div><div class="vi">'+new Date(t.d).toLocaleDateString("vi-VN")+" · "+LVNAME[t.level]+" · ngành "+esc((DATA[t.ng]||DATA.gt).ngan)+"</div></div></div>").join("")+"</div>";
+}
+function lvBar(label,c,t){const p=t?Math.round(c/t*100):0;return'<div class="lv-row"><span>'+label+'</span><div class="bar"><i style="width:'+p+'%"></i></div><b>'+c+"/"+t+"</b></div>"}
+function renderLV(){
+ const box=$("#v-trinh-do"),who=CURP?esc(CURP.name)+", "+CURP.age+" tuổi":"Bạn";
+ if(!LV){
+  const cur=lvStage||lvStageGuess();
+  box.innerHTML='<div class="start" style="align-items:stretch;text-align:left"><div style="display:flex;gap:14px;align-items:center"><div class="pic lg" style="width:88px;height:88px">'+pic("🎯")+'</div><div><p class="eyebrow" style="margin:0">Kiểm tra trình độ</p><h2 style="font-size:1.3rem">'+who+'</h2><p class="muted" style="margin:4px 0 0;font-size:.88rem">25 câu, khoảng 10 phút: 15 ngữ pháp từ A1 đến C1, 5 từ vựng ngành <b>'+esc(DATA[S.nganh].ten)+'</b>, 5 nghe hiểu.</p></div></div>'+
+   '<p style="margin:6px 0 0;font-weight:600">Giai đoạn</p><div class="mini-seg" role="group" aria-label="Giai đoạn" style="flex-wrap:wrap">'+STAGES.map(s=>'<button data-act="lv-stage" data-s="'+s[0]+'" aria-pressed="'+(cur===s[0])+'" title="'+s[2]+'">'+s[1]+"</button>").join("")+'</div><p class="muted" style="margin:0;font-size:.8rem">'+(STAGES.find(s=>s[0]===cur)||STAGES[0])[2]+". Trang tự gợi ý theo tiến độ lộ trình, bạn có thể đổi.</p>"+
+   '<div class="row-c" style="justify-content:flex-start"><button class="btn pri big" data-act="lv-start">Bắt đầu bài test</button></div></div>'+
+   '<h3 class="sec-h" style="margin-top:24px">Kết quả các lần test</h3>'+lvHistory();
+  return;
+ }
+ const n=LV.qs.length;
+ if(LV.i>=n){
+  const r=LV.res,prev=S.tests.length>1?S.tests[S.tests.length-2]:null;
+  let cmp="";if(prev){const d=LVN.indexOf(r.level)-LVN.indexOf(prev.level);cmp=d>0?"Tăng từ "+prev.level+" lên "+r.level+" so với lần trước. 🎉":d<0?"Thấp hơn lần trước ("+prev.level+"). Ôn lại phần còn yếu nhé.":"Giữ mức "+r.level+" như lần trước, điểm "+(r.pct>=prev.pct?"tăng ":"giảm ")+Math.abs(r.pct-prev.pct)+"%."}
+  box.innerHTML='<div class="done-box" style="max-width:640px;align-items:stretch;text-align:left"><div style="display:flex;gap:16px;align-items:center"><span class="lv-badge">'+r.level+'</span><div><p class="eyebrow" style="margin:0">'+stageName(LV.stage)+" · "+r.pct+'%</p><h2 style="font-size:1.3rem">'+LVNAME[r.level]+"</h2>"+(cmp?'<p class="muted" style="margin:2px 0 0;font-size:.88rem">'+cmp+"</p>":"")+"</div></div>"+
+   lvBar("Ngữ pháp",r.sec.g[0],r.sec.g[1])+lvBar("Từ vựng ngành",r.sec.v[0],r.sec.v[1])+lvBar(canSpeak?"Nghe hiểu":"Đọc hiểu",r.sec.l[0],r.sec.l[1])+
+   '<div class="lv-lvls">'+LVN.map(l=>'<span title="Ngữ pháp bậc '+l+'"><b>'+l+"</b> "+r.byLv[l][0]+"/"+r.byLv[l][1]+"</span>").join("")+"</div>"+
+   '<p style="margin:4px 0 0"><b>Gợi ý:</b> '+LVADV[r.level]+"</p>"+
+   '<div class="row-c" style="justify-content:flex-start"><button class="btn pri" data-act="lv-reset">Về trang kiểm tra</button><button class="btn" data-act="tab" data-tab="lo-trinh">Xem lộ trình</button></div></div>';
+  return;
+ }
+ const q=LV.qs[LV.i],a=LV.picked>=0,secName={g:"Ngữ pháp · bậc "+(q.lv||""),v:"Từ vựng ngành",l:"Nghe hiểu",r:"Đọc hiểu"}[q.sec];
+ const ask={g:"Chọn đáp án đúng điền vào chỗ trống",v:"Nghĩa tiếng Việt là gì?",l:"Nghe câu, chọn nghĩa đúng",r:"Chọn nghĩa đúng của câu"}[q.sec];
+ let prompt;
+ if(q.sec==="l")prompt='<button class="btn pri big" data-act="lv-play" data-t="'+esc(q.q)+'">🔊 Nghe câu</button>'+(a?'<div class="q-prompt" style="font-size:1.1rem">'+esc(q.q)+"</div>":'<span class="muted" style="font-size:.8rem">Câu tiếng Anh sẽ hiện sau khi bạn trả lời</span>');
+ else prompt=(q.pic?'<div class="pic lg" style="width:96px;height:96px">'+pic(q.pic)+"</div>":"")+'<div class="q-prompt">'+esc(q.q)+"</div>";
+ let h='<div class="qz"><div class="q-top"><span>Câu '+(LV.i+1)+"/"+n+" · "+secName+"</span><span>"+stageName(LV.stage)+'</span></div><div class="fc-prog" style="margin:6px 0 0;max-width:none"><i style="width:'+Math.round(LV.i/n*100)+'%"></i></div>'+
+  '<div class="q-card"><span class="q-ask">'+ask+"</span>"+prompt+'</div><div class="opts">'+q.opts.map((o,j)=>{let cl="opt";if(a){if(j===q.ans)cl+=" ok";else if(j===LV.picked)cl+=" bad"}return'<button class="'+cl+'" data-act="lv-ans" data-j="'+j+'"'+(a?" disabled":"")+'><span class="k">'+(j+1)+"</span><span>"+esc(o)+"</span></button>"}).join("")+"</div>";
+ if(a)h+='<div class="reveal"><div class="wtxt"><span class="vi">'+esc(q.ex)+'</span></div></div><div class="q-next"><button class="btn pri" data-act="lv-next" id="lvNext">'+(LV.i+1<n?"Câu tiếp →":"Xem kết quả")+"</button></div>";
+ box.innerHTML=h+"</div>";
+ if(a){const b=$("#lvNext");if(b)b.focus({preventScroll:true})}
+}
+function lvSayCur(){const q=LV&&LV.qs[LV.i];if(q&&q.sec==="l")speak(q.q,S.g)}
+
 /* ========== SỰ KIỆN ========== */
 document.addEventListener("click",e=>{
  const b=e.target.closest("[data-act]");if(!b)return;
@@ -1141,6 +1273,12 @@ document.addEventListener("click",e=>{
  if(act==="hc-clear"){HC.log=[];renderHCLog();return}
  if(act==="hc-copy"){if(!HC.log.length){toast("Chưa có hội thoại để chép");return}copyText(HC.log.map(m=>(m.from==="vi"?"Bạn: ":"Người kia: ")+m.text+"\n→ "+(m.tr||"")).join("\n\n"),"Đã chép hội thoại");return}
  if(act==="speak-vi"){speakVi(b.dataset.t);return}
+ if(act==="lv-stage"){lvStage=b.dataset.s;renderLV();return}
+ if(act==="lv-start"){LV=null;lvMake();renderLV();lvSayCur();window.scrollTo(0,0);return}
+ if(act==="lv-play"){speak(b.dataset.t,S.g,b);return}
+ if(act==="lv-ans"){if(!LV||LV.picked>=0)return;const q=LV.qs[LV.i];LV.picked=+b.dataset.j;q.ok=LV.picked===q.ans;renderLV();return}
+ if(act==="lv-next"){LV.i++;LV.picked=-1;if(LV.i>=LV.qs.length&&!LV.res){LV.res=lvResult();S.tests.push({d:Date.now(),stage:LV.stage,ng:LV.ng,pct:LV.res.pct,level:LV.res.level,sec:LV.res.sec});save()}renderLV();lvSayCur();return}
+ if(act==="lv-reset"){LV=null;renderLV();return}
  if(act==="tn-lang"){S.tnL=b.dataset.l;S.tnTag="";S.tnN=60;TNQ=null;save();renderTN();return}
  if(act==="tn-mode"){S.tnMode=b.dataset.m;renderTN();return}
  if(act==="tn-tag"){S.tnTag=b.dataset.t;S.tnN=60;TNQ=null;renderTN();return}
